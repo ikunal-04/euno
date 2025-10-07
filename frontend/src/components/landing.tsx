@@ -25,9 +25,9 @@ export default function MindSpaceLanding() {
           <h1
             className={`${playfair.className} text-[3.5rem] md:text-[4.5rem] leading-[1.15] font-medium tracking-tight`}
           >
-            <span className="block text-[#f5f4f0]/90">You’re not alone.</span>
+            <span className="block text-[#f5f4f0]/90">Calmness</span>
             <span className="block text-[#f5f4f0] font-semibold">
-              MindSpace is here.
+              Peace
             </span>
           </h1>
 
@@ -35,16 +35,16 @@ export default function MindSpaceLanding() {
           <p
             className={`${dmSans.className} text-lg md:text-xl text-[#f5f4f0]/75 max-w-md`}
           >
-           Your calm in the chaos — always there to listen. 
+           Your calm in the chaos, always there to listen. 
             
           </p>
 
           {/* Sign In Card */}
-          <div className="bg-[#1a1a19] border border-[#2a2928] rounded-2xl p-8 shadow-xl w-[340px] backdrop-blur-sm">
+          {/* <div className="bg-[#1a1a19] border border-[#2a2928] rounded-2xl p-8 shadow-xl w-[340px] backdrop-blur-sm"> */}
             <button
               onClick={() => signIn("google")}
-              className={`${dmSans.className} w-full flex items-center justify-center gap-3 px-6 py-3 bg-[#121211] border border-[#2a2928] rounded-xl text-lg font-medium text-[#f5f4f0] 
-                transition-all duration-300 hover:bg-[#1c1b1a] hover:border-[#3a3938] hover:shadow-[0_0_25px_rgba(245,244,240,0.08)]`}
+              className={`${dmSans.className} flex items-center justify-center gap-3 px-6 py-3  p-8 shadow-xl w-[340px] bg-[#121211] border border-[#2a2928] rounded-xl text-lg font-medium text-[#f5f4f0] 
+                transition-all duration-300 hover:bg-black`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -67,7 +67,7 @@ export default function MindSpaceLanding() {
               <span>Continue with Google</span>
             </button>
           </div>
-        </div>
+        {/* </div> */}
 
         {/* ===== Right Section - Video ===== */}
         <div className="flex-1 flex justify-center lg:justify-end w-full">
