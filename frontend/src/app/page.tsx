@@ -1,30 +1,42 @@
-"use client"
+"use client";
 
-import React from 'react';
-import { useSession } from 'next-auth/react';
-import { VoiceChat } from "@/components/therapy/voice-chat"
-import MindSpaceLanding from "@/components/landing"
-import NavBarMain from "@/components/navbar-main"
+import React from "react";
+import { VoiceChat } from "@/components/therapy/voice-chat";
+import MindSpaceLanding from "@/components/landing";
+import NavBarMain from "@/components/navbar-main";
+import { useUserStore } from "@/store/useUser";
+import Loader from "@/components/loader";
+import { motion } from "framer-motion";
 
-// Main App Component
 export default function Page() {
-  const { data: session } = useSession();
+  const user = useUserStore((state) => state.user);
+  const loading = useUserStore((state) => state.loading);
 
-
-  // If user is signed in, show the app
-  if (session) {
+  if (loading) {
     return (
-     
-          <div>
-            <NavBarMain />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <VoiceChat />
-          </div>
-          </div>
+      <motion.div
+    key="loader"
+    initial={{ opacity: 1 }}
+    animate={{ opacity: 0 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.6, ease: "easeOut" }}
+  >
+    <Loader />
+  </motion.div>
+    )
+      
+  }
 
+  if (user) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <NavBarMain />
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <VoiceChat />
+        </div>
+      </div>
     );
   }
 
-  // If user is not signed in, show landing page
   return <MindSpaceLanding />;
 }

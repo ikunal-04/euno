@@ -1,15 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import React, { useState, useRef } from 'react'
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { signIn, signOut } from 'next-auth/react'
 import Image from 'next/image'
 import PricingButton from "@/components/pricingButton"
+import { useUserStore } from '@/store/useUser'
+import Logo from "@/components/logo"
+
 
 const NavBarMain = () => {
 
-    const { data: session } = useSession()
     const [open, setOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
-    const user = session?.user;
+    const user = useUserStore((state) => state.user);
 
   return (
     <div>
@@ -24,17 +26,7 @@ const NavBarMain = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="flex items-center gap-3 pl-16">
-              {/* Minimalist logo */}
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white/20 to-gray-500/30 flex items-center justify-center shadow-sm">
-                <div className="w-3 h-3 rounded-full bg-white/90"></div>
-              </div>
-              
-              {/* Brand name - Color adjusted to text-[#faf9f5] for visibility on dark background */}
-              <h1 className="text-xl font-light text-[#faf9f5] tracking-wide lowercase">
-                mindspace
-              </h1>
-            </div>
+            <Logo />
           </motion.div>
           <PricingButton />
           {user ? (
@@ -45,7 +37,7 @@ const NavBarMain = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {user.image && (
+                {user?.image && (
                   <motion.div
                     className="relative"
                     animate={{ 
@@ -56,7 +48,7 @@ const NavBarMain = () => {
                     style={{ borderRadius: "50%" }}
                   >
                     <Image
-                      src={user.image}
+                      src={user?.image}
                       alt="Profile Picture"
                       width={28}
                       height={28}
@@ -66,7 +58,7 @@ const NavBarMain = () => {
                 )}
                 
                 <span className="text-sm font-normal text-white group-hover:text-gray-900 transition-colors">
-                  {user.name?.toLowerCase()}
+                  {user?.name?.toLowerCase()}
                 </span>
                 
                 <motion.svg

@@ -1,3 +1,5 @@
+"use client"
+
 import React from "react";
 import NavLanding from "@/components/nav-landing";
 import { signIn } from "next-auth/react";
