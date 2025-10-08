@@ -10,21 +10,17 @@ import NavBarMain from "@/components/navbar-main"
 export default function Page() {
   const { data: session } = useSession();
 
-
-  // If user is signed in, show the app
   if (session) {
     return (
-     
-          <div>
-            <NavBarMain />
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <VoiceChat />
-          </div>
-          </div>
+      <div>
+        <NavBarMain />
+        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <VoiceChat />
+        </div>
+      </div>
 
     );
   }
 
-  // If user is not signed in, show landing page
   return <MindSpaceLanding />;
 }

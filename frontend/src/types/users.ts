@@ -6,6 +6,8 @@ export type Users = {
     email: string;
     imageUrl: string;
     razorpayCustomerId: string;
-    plans: "FREE" | "PRO" | "ULTRA";
+    razorpaySubscriptionId: string;
+    subscriptionStatus: string;
+    plans: "FREE" | "PRO";
     createdAt: Date;
 }

@@ -2,13 +2,17 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ArrowLeft } from "lucide-react";
 import { PLAN_IDS } from "@/config/const";
 import Script from "next/script";
 import { createSubscription } from "@/lib/razorpay/client";
+import { useUserStore } from "@/store/user";
+import { useRouter } from "next/navigation";
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
+  const { user } = useUserStore();
+  const router = useRouter();
 
   const plans = [
     {
@@ -46,42 +50,31 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#141413] text-white flex flex-col items-center px-6 py-16 font-sans">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-      {/* Header */}
+      
+      <motion.button
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.6 }}
+        onClick={() => router.back()}
+        className="self-start flex items-center gap-2 text-gray-400 hover:text-white transition-colors duration-200 group"
+      >
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+        <span>Back</span>
+      </motion.button>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="text-center mb-12"
       > 
-        {/** TODO ADD THE BACK BUTTON */}
         <h1 className="font-light text-5xl bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent pb-2">
           Upgrade Your Plan
         </h1>
         <p className="text-gray-400 mt-4 text-lg max-w-2xl mx-auto">
-          Whether you just want to talk or need a true companion, we’ve got you covered.
+          Whether you just want to talk or need a true companion, we've got you covered.
         </p>
       </motion.div>
-
-      {/* Toggle */}
-      <div className="flex items-center space-x-4 mb-12">
-        <span className={`text-sm ${!isYearly ? "text-white" : "text-gray-400"}`}>
-          Monthly
-        </span>
-        <div
-          onClick={() => setIsYearly(!isYearly)}
-          className="w-14 h-7 flex items-center bg-gray-700 rounded-full cursor-pointer transition-all duration-300"
-        >
-          <motion.div
-            layout
-            className="w-5 h-5 bg-indigo-500 rounded-full mx-1"
-            animate={{ x: isYearly ? 28 : 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          />
-        </div>
-        <span className={`text-sm ${isYearly ? "text-white" : "text-gray-400"}`}>
-          Yearly <span className="text-indigo-400">(Save 20%)</span>
-        </span>
-      </div>
 
       {/* Plans */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl w-full">
@@ -127,7 +120,7 @@ export default function PricingPage() {
                   ? "bg-indigo-500 hover:bg-indigo-600"
                   : "bg-[#2a2927] hover:bg-[#3a3937]"
                 }`}
-              onClick={() => createSubscription(plan.id)}
+              onClick={() => createSubscription(plan.id, user?.name || undefined, user?.email || undefined)}
             >
               {plan.button}
             </button>
@@ -135,7 +128,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <p className="text-sm text-gray-500 mt-12">
+      <p className="text-sm text-gray-500 mt-8">
         Cancel anytime. No hidden fees. Secure payments powered by Razorpay.
       </p>
     </div>
