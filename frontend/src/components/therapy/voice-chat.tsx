@@ -34,7 +34,7 @@ export const VoiceChat = () => {
 
 
   const connectWebSocket = () => {
-    const ws = new WebSocket('ws://localhost:8000/ws/audio');
+    const ws = new WebSocket('wss://euno-766343988995.europe-west1.run.app/ws/audio');
 
     ws.onopen = () => {
       console.log("WebSocket connected");
