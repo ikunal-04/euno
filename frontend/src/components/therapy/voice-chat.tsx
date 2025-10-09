@@ -27,9 +27,14 @@ export const VoiceChat = () => {
   const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const audioPlaybackRef = useRef<HTMLAudioElement | null>(null);
+  const audioQueueRef = useRef<ArrayBuffer[]>([]);
+  const isPlayingRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const playTimeRef = useRef(0);
+
 
   const connectWebSocket = () => {
-    const ws = new WebSocket("ws://localhost:8000/ws/audio");
+    const ws = new WebSocket('ws://localhost:8000/ws/audio');
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -40,6 +45,7 @@ export const VoiceChat = () => {
       if (data.type === "transcription") {
         setCurrentUserText(data.text);
 
+        // If transcription is final, add to messages
         if (data.is_final) {
           const userMessage: Message = {
             id: `user-${Date.now()}`,
@@ -52,82 +58,90 @@ export const VoiceChat = () => {
         }
       }
 
-      if (data.type === "agent_response") {
-        if (typeof data.text === "string" && data.text.trim().length > 0) {
-          const agentMessage: Message = {
-            id: `agent-${Date.now()}`,
-            type: "agent",
-            text: data.text,
-            timestamp: new Date(),
-          };
-          // setMessages((prev) => [...prev, agentMessage]); // 🧠 Commented: hide agent text
-          setCurrentAgentText("");
+      if (data.type === 'agent_response') {
+        // Handle text response
+        if (typeof data.text === 'string' && data.text.trim().length > 0) {
+          // Only add to messages if it's the final response
+          if (data.is_final) {
+            const agentMessage: Message = {
+              id: `agent-${Date.now()}`,
+              type: "agent",
+              text: data.text,
+              timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, agentMessage]);
+            setCurrentAgentText("");
+          } else {
+            // Show streaming text
+            setCurrentAgentText(data.text);
+          }
         }
 
-        if (data.audio_data) {
+        // Handle audio (both streaming and complete)
+        if (data.audio_data && (data.status === 'streaming' || data.status === 'complete')) {
           try {
-            const mimeRaw: string | undefined = data.audio_mime_type;
-            const mime = (mimeRaw || "").toLowerCase();
-            const byteArray = base64ToUint8Array(data.audio_data);
+            console.log('🔊 Received audio chunk:', data.audio_mime_type);
 
-            const buf = new ArrayBuffer(byteArray.byteLength);
-            new Uint8Array(buf).set(byteArray);
+            const mime = (data.audio_mime_type || '').toLowerCase();
+            const u8 = base64ToUint8Array(data.audio_data);
 
-            let blob: Blob;
+            // Prefer WAV playback in browser per Deepgram guidance.
+            if (mime.includes('audio/wav')) {
+              const arr = new Uint8Array(u8.byteLength);
+              arr.set(u8);
+              const blob = new Blob([arr.buffer], { type: 'audio/wav' });
+              const url = URL.createObjectURL(blob);
 
-            if (mime.includes("linear16")) {
-              const sampleRate = parseSampleRateFromMime(mime) ?? 48000;
-              const channels = parseChannelsFromMime(mime) ?? 1;
-              const wavAb = buildWavFromPCM16(
-                new Uint8Array(buf),
-                sampleRate,
-                channels
-              );
-              blob = new Blob([wavAb], { type: "audio/wav" });
-            } else if (mime.includes("wav")) {
-              blob = new Blob([buf], { type: "audio/wav" });
-            } else if (mime.includes("pcm")) {
-              const wavAb = buildWavFromPCM16(new Uint8Array(buf), 48000, 1);
-              blob = new Blob([wavAb], { type: "audio/wav" });
+              // Stop previous element
+              if (audioPlaybackRef.current) {
+                try { audioPlaybackRef.current.pause(); } catch {}
+                try { URL.revokeObjectURL(audioPlaybackRef.current.src); } catch {}
+              }
+
+              const audio = new Audio(url);
+              audioPlaybackRef.current = audio;
+              audio.volume = isMuted ? 0 : volume;
+              setIsPlaying(true);
+
+              audio.onended = () => {
+                if (data.status === 'complete') setIsPlaying(false);
+                try { URL.revokeObjectURL(url); } catch {}
+              };
+              audio.onerror = () => {
+                console.error('Audio playback error for WAV');
+                setIsPlaying(false);
+                try { URL.revokeObjectURL(url); } catch {}
+              };
+              void audio.play();
             } else {
-              blob = new Blob([buf], { type: mimeRaw || "audio/mpeg" });
+              // Fallback: raw PCM via WebAudio
+              const int16 = new Int16Array(u8.buffer, u8.byteOffset, u8.byteLength / 2);
+              const f32 = new Float32Array(int16.length);
+              for (let i = 0; i < int16.length; i++) f32[i] = int16[i] / 32768;
+
+              const ctx = audioCtxRef.current ?? new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 48000 });
+              audioCtxRef.current = ctx;
+
+              const buf = ctx.createBuffer(1, f32.length, 48000);
+              buf.getChannelData(0).set(f32);
+
+              const src = ctx.createBufferSource();
+              src.buffer = buf;
+              src.connect(ctx.destination);
+
+              const startAt = Math.max(ctx.currentTime, playTimeRef.current);
+              src.start(startAt);
+              playTimeRef.current = startAt + buf.duration;
+
+              src.onended = () => {
+                if (data.status === 'complete') setIsPlaying(false);
+              };
+
+              setIsPlaying(true);
             }
 
-            let url = URL.createObjectURL(blob);
-
-            if (audioPlaybackRef.current) {
-              try {
-                audioPlaybackRef.current.pause();
-              } catch {}
-              try {
-                URL.revokeObjectURL(audioPlaybackRef.current.src);
-              } catch {}
-            }
-
-            const audio = new Audio(url);
-            audioPlaybackRef.current = audio;
-            audio.volume = isMuted ? 0 : volume;
-            setIsPlaying(true);
-
-            audio.onended = () => {
-              setIsPlaying(false);
-              try {
-                URL.revokeObjectURL(url);
-              } catch {}
-            };
-
-            audio.onerror = async (error) => {
-              console.error("Audio playback error:", error);
-              setIsPlaying(false);
-              try {
-                URL.revokeObjectURL(url);
-              } catch {}
-            };
-
-            console.log("▶️ Playing agent response");
-            void audio.play();
           } catch (e) {
-            console.error("Failed to play agent audio:", e);
+            console.error('Failed to play streaming audio:', e);
             setIsPlaying(false);
           }
         }
@@ -153,7 +167,7 @@ export const VoiceChat = () => {
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
-        },
+        }
       });
 
       streamRef.current = stream;
@@ -179,6 +193,7 @@ export const VoiceChat = () => {
       };
 
       sourceNode.connect(workletNode);
+
     } catch (error) {
       console.error("Error accessing microphone:", error);
     }
@@ -189,7 +204,7 @@ export const VoiceChat = () => {
       if (sourceNodeRef.current && workletNodeRef.current) {
         sourceNodeRef.current.disconnect(workletNodeRef.current);
       }
-    } catch {}
+    } catch { }
     workletNodeRef.current = null;
     sourceNodeRef.current = null;
 
@@ -198,7 +213,7 @@ export const VoiceChat = () => {
       audioContextRef.current = null;
       try {
         ctx.close();
-      } catch {}
+      } catch { }
     }
 
     if (streamRef.current) {
@@ -210,8 +225,21 @@ export const VoiceChat = () => {
   const handleStartCall = async () => {
     setIsCallActive(true);
     setIsRecording(true);
+
+    // Connect WebSocket
     connectWebSocket();
+
+    // Start audio capture
     await startAudioCapture();
+
+    // Add welcome message
+    const welcomeMessage: Message = {
+      id: `agent-welcome-${Date.now()}`,
+      type: "agent",
+      text: "Hello! I'm here to listen and support you. Feel free to share whatever is on your mind.",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, welcomeMessage]);
   };
 
   const handleEndCall = () => {
@@ -220,7 +248,22 @@ export const VoiceChat = () => {
     setIsPlaying(false);
     setCurrentUserText("");
     setCurrentAgentText("");
+
+    // Clear audio queue and stop playing
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
+
+    // Close audio context
+    if (audioCtxRef.current) {
+      try { audioCtxRef.current.close(); } catch {}
+      audioCtxRef.current = null;
+      playTimeRef.current = 0;
+    }
+
+    // Stop audio capture
     stopAudioCapture();
+
+    // Close WebSocket connection
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -253,61 +296,7 @@ export const VoiceChat = () => {
     return bytes;
   }
 
-  function buildWavFromPCM16(
-    pcm16: Uint8Array,
-    sampleRate = 16000,
-    channels = 1
-  ): ArrayBuffer {
-    const bytesPerSample = 2;
-    const blockAlign = channels * bytesPerSample;
-    const byteRate = sampleRate * blockAlign;
-    const dataSize = pcm16.byteLength;
-    const buffer = new ArrayBuffer(44 + dataSize);
-    const view = new DataView(buffer);
 
-    writeString(view, 0, "RIFF");
-    view.setUint32(4, 36 + dataSize, true);
-    writeString(view, 8, "WAVE");
-    writeString(view, 12, "fmt ");
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
-    view.setUint16(22, channels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, 16, true);
-    writeString(view, 36, "data");
-    view.setUint32(40, dataSize, true);
-    new Uint8Array(buffer, 44).set(pcm16);
-    return buffer;
-  }
-
-  function writeString(view: DataView, offset: number, str: string) {
-    for (let i = 0; i < str.length; i++)
-      view.setUint8(offset + i, str.charCodeAt(i));
-  }
-
-  function parseSampleRateFromMime(mime: string): number | null {
-    const lower = mime.toLowerCase();
-    const rateMatch = lower.match(/(?:rate|samplerate)\s*=\s*(\d{3,6})/);
-    if (rateMatch) {
-      const n = parseInt(rateMatch[1], 10);
-      if (!Number.isNaN(n) && n > 0) return n;
-    }
-    return null;
-  }
-
-  function parseChannelsFromMime(mime: string): number | null {
-    const lower = mime.toLowerCase();
-    const channelsMatch = lower.match(/channels?\s*=\s*(\d+)/);
-    if (channelsMatch) {
-      const n = parseInt(channelsMatch[1], 10);
-      if (!Number.isNaN(n) && n > 0) return n;
-    }
-    return null;
-  }
-
-  // 🌀 Modified return: Minimal gradient-circle voice interface
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
       {/* Gradient pulse background */}
@@ -321,60 +310,117 @@ export const VoiceChat = () => {
         }}
       />
 
-      {/* Central glowing circle */}
-      <div className="relative z-10 flex flex-col items-center space-y-6">
-        <Button
-          onClick={isCallActive ? handleEndCall : handleStartCall}
-          size="lg"
-          className={`rounded-full w-36 h-36 transition-all duration-700 shadow-[0_0_60px_rgba(59,130,246,0.6)] ${
-            isCallActive
-              ? "bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
-              : "bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
-          } ${isRecording ? "scale-110" : "scale-100"}`}
-        >
-          {isCallActive ? (
-            <Mic className="h-10 w-10 text-white" />
-          ) : (
-            <Phone className="h-10 w-10 text-white" />
-          )}
-        </Button>
-
-        {/* Status */}
-        <div className="text-center text-gray-400 text-sm">
-          {isCallActive
-            ? isRecording
-              ? "Listening..."
-              : isPlaying
-              ? "Speaking..."
-              : "Connected"
-            : "Tap to start"}
-        </div>
-
-        {/* Volume controls */}
-        <div className="flex items-center space-x-2 mt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleMute}
-            disabled={!isCallActive}
-            className="bg-transparent border-gray-600 text-gray-300 hover:bg-[#232322]"
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
           >
-            {isMuted ? (
-              <VolumeX className="h-4 w-4" />
+            <div
+              className={`max-w-[80%] p-3 rounded-lg ${message.type === "user"
+                  ? "bg-blue-500 text-white"
+                  : "bg-muted text-foreground"
+                }`}
+            >
+              <p className="text-sm">{message.text}</p>
+              <span className="text-xs opacity-70 mt-1 block">
+                {message.timestamp.toLocaleTimeString()}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* Current partial messages */}
+        {currentUserText && (
+          <div className="flex justify-end">
+            <div className="max-w-[80%] p-3 rounded-lg bg-blue-400 text-white opacity-70">
+              <p className="text-sm">{currentUserText}</p>
+              <span className="text-xs opacity-70">Speaking...</span>
+            </div>
+          </div>
+        )}
+
+        {currentAgentText && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] p-3 rounded-lg bg-muted/70 text-foreground">
+              <p className="text-sm">{currentAgentText}</p>
+              <span className="text-xs opacity-70">Thinking...</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Controls */}
+      <div className="p-4 border-t bg-background/50 backdrop-blur">
+        <div className="flex items-center justify-center space-x-4">
+          {/* Volume Control */}
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleMute}
+              disabled={!isCallActive}
+            >
+              {isMuted ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </Button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="w-20"
+              disabled={!isCallActive}
+            />
+          </div>
+
+          {/* Main Call Button */}
+          <Button
+            onClick={isCallActive ? handleEndCall : handleStartCall}
+            size="lg"
+            variant={isCallActive ? "destructive" : "default"}
+            className={`rounded-full w-16 h-16 ${isCallActive
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-green-500 hover:bg-green-600"
+              }`}
+          >
+            {isCallActive ? (
+              <PhoneOff className="h-6 w-6" />
             ) : (
-              <Volume2 className="h-4 w-4" />
+              <Phone className="h-6 w-6" />
             )}
           </Button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="w-20 accent-blue-400"
-            disabled={!isCallActive}
-          />
+
+          {/* Mic Indicator */}
+          <div className="flex items-center space-x-2">
+            <div
+              className={`p-2 rounded-full ${isRecording ? "bg-red-100" : "bg-muted"}`}
+            >
+              {isRecording ? (
+                <Mic className="h-4 w-4 text-red-500" />
+              ) : (
+                <MicOff className="h-4 w-4 text-muted-foreground" />
+              )}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {isRecording ? "Listening..." : "Not recording"}
+            </span>
+          </div>
+        </div>
+
+        {/* Status */}
+        <div className="text-center mt-3">
+          <span className="text-xs text-muted-foreground">
+            {!isCallActive && "Ready to start"}
+            {isCallActive && "Session active"}
+            {isPlaying && " - Agent speaking"}
+          </span>
         </div>
       </div>
 
