@@ -5,12 +5,15 @@ import json
 import os
 import base64
 from typing import Optional
+import threading
 from dotenv import load_dotenv
 from deepgram import (
     DeepgramClient,
     DeepgramClientOptions,
     LiveTranscriptionEvents,
     LiveOptions,
+    SpeakWebSocketEvents,
+    SpeakOptions,
 )
 from app.agent.agent import generate_response
 
@@ -66,41 +69,72 @@ async def websocket_audio_endpoint(websocket: WebSocket):
                     print(f"❌ Failed to send transcript to frontend: {ws_error}")
                 
                 if result.is_final:
-                    print(f"🔄 Generating agent response for final transcript: '{sentence}'")
+                    print(f"🔄 Generating streaming TTS via Deepgram SDK for: '{sentence}'")
                     try:
-                        agent_response = generate_response(sentence)
-                        
-                        # Gemini returns base64 in agent_response already; include mime_type if present
-                        audio_b64 = agent_response.get("audio_data")
-                        # Ensure audio is base64 string for JSON serialization
-                        if isinstance(audio_b64, (bytes, bytearray)):
-                            try:
-                                audio_b64 = base64.b64encode(audio_b64).decode('utf-8')
-                            except Exception as enc_err:
-                                print(f"❌ Failed to base64-encode audio bytes: {enc_err}")
-                                audio_b64 = None
-                        audio_mime = agent_response.get("audio_mime_type")
+                        # Generate response text
+                        from app.services.agent_service import agent_service
+                        llm_text = agent_service.generate_response(sentence)
 
-                        agent_message = {
-                            "type": "agent_response",
-                            "text": agent_response["text"],
-                            "audio_data": audio_b64,
-                            "audio_mime_type": audio_mime,
-                            "is_final": True
+                        dg_speak = deepgram.speak.websocket.v("1")
+
+                        def on_open(self, open_event, **kwargs):
+                            print("🔊 TTS WebSocket opened")
+
+                        def on_binary(self, data: bytes, **kwargs):
+                            try:
+                                b64 = base64.b64encode(data).decode('utf-8')
+                                msg = {
+                                    "type": "agent_response",
+                                    "text": llm_text,
+                                    "audio_data": b64,
+                                    "audio_mime_type": "audio/linear16; rate=48000; channels=1",
+                                    "status": "streaming",
+                                    "is_final": False
+                                }
+                                asyncio.run_coroutine_threadsafe(websocket.send_text(json.dumps(msg)), loop)
+                            except Exception as e:
+                                print(f"❌ TTS proxy error: {e}")
+
+                        def on_close(self, close_event, **_):
+                            done = {
+                                "type": "agent_response",
+                                "text": llm_text,
+                                "audio_data": "",
+                                "audio_mime_type": "audio/linear16; rate=48000; channels=1",
+                                "status": "complete",
+                                "is_final": True
+                            }
+                            asyncio.run_coroutine_threadsafe(websocket.send_text(json.dumps(done)), loop)
+                            print("✅ TTS streaming complete")
+
+                        dg_speak.on(SpeakWebSocketEvents.Open, on_open)
+                        dg_speak.on(SpeakWebSocketEvents.AudioData, on_binary)
+                        dg_speak.on(SpeakWebSocketEvents.Close, on_close)
+
+                        # Some SDK versions expect a plain dict for start(options)
+                        opts_dict = {
+                            "model": "aura-2-thalia-en",
+                            "encoding": "linear16",
+                            "sample_rate": 48000,
                         }
-                        
-                        try:
-                            asyncio.run_coroutine_threadsafe(
-                                websocket.send_text(json.dumps(agent_message)), loop
-                            )
-                            print(f"🤖 Agent response sent: {agent_response['text']}")
-                            if audio_b64:
-                                print(f"🔊 Audio data included (base64 length: {len(audio_b64)})")
-                        except Exception as ws_error:
-                            print(f"❌ Failed to send agent response: {ws_error}")
-                        
+                        if dg_speak.start(opts_dict) is False:
+                            print("❌ Failed to start TTS")
+                            return
+
+                        dg_speak.send_text(llm_text)
+                        dg_speak.flush()
+
+                        # Ensure connection finishes after a grace period
+                        def finish_later():
+                            try:
+                                dg_speak.finish()
+                            except Exception as e:
+                                print(f"TTS finish error: {e}")
+
+                        threading.Timer(8.0, finish_later).start()
+
                     except Exception as agent_error:
-                        print(f"❌ Error generating agent response: {agent_error}")
+                        print(f"❌ Error generating SDK streaming TTS: {agent_error}")
                 
             except Exception as e:
                 print(f"❌ Error in transcription handler: {e}")
