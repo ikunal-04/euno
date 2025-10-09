@@ -5,6 +5,9 @@ export type Users = {
     name: string;
     email: string;
     imageUrl: string;
-    plans: "FREE" | "PRO" | "ULTRA";
+    razorpayCustomerId: string;
+    razorpaySubscriptionId: string;
+    subscriptionStatus: string;
+    plans: "FREE" | "PRO";
     createdAt: Date;
 }

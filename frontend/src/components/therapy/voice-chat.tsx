@@ -37,12 +37,12 @@ export const VoiceChat = () => {
     const ws = new WebSocket('ws://localhost:8000/ws/audio');
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log("WebSocket connected");
     };
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'transcription') {
+      if (data.type === "transcription") {
         setCurrentUserText(data.text);
 
         // If transcription is final, add to messages
@@ -53,7 +53,7 @@ export const VoiceChat = () => {
             text: data.text,
             timestamp: new Date(),
           };
-          setMessages((prev) => [...prev, userMessage]);
+          // setMessages((prev) => [...prev, userMessage]); // 🧠 Commented: no text chat display
           setCurrentUserText("");
         }
       }
@@ -149,11 +149,11 @@ export const VoiceChat = () => {
     };
 
     ws.onclose = () => {
-      console.log('WebSocket disconnected');
+      console.log("WebSocket disconnected");
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
     };
 
     wsRef.current = ws;
@@ -171,25 +171,20 @@ export const VoiceChat = () => {
       });
 
       streamRef.current = stream;
-
-      // Initialize AudioContext targeting 16 kHz; processor will resample if needed
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)({
         sampleRate: 16000,
       });
       audioContextRef.current = audioContext;
 
-      // Load worklet from public folder
-      await audioContext.audioWorklet.addModule('/pcm16-processor.js');
+      await audioContext.audioWorklet.addModule("/pcm16-processor.js");
 
-      // Create a source from the mic stream
       const sourceNode = audioContext.createMediaStreamSource(stream);
       sourceNodeRef.current = sourceNode;
 
-      // Create the PCM16 writer worklet
-      const workletNode = new AudioWorkletNode(audioContext, 'pcm16-writer');
+      const workletNode = new AudioWorkletNode(audioContext, "pcm16-writer");
       workletNodeRef.current = workletNode;
 
-      // When PCM16 buffers are available, send them over the websocket
       workletNode.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
         const buffer = event.data;
         if (buffer && wsRef.current?.readyState === WebSocket.OPEN) {
@@ -197,16 +192,14 @@ export const VoiceChat = () => {
         }
       };
 
-      // Connect source -> worklet (do not connect to destination to avoid echo)
       sourceNode.connect(workletNode);
 
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      console.error("Error accessing microphone:", error);
     }
   };
 
   const stopAudioCapture = () => {
-    // Disconnect worklet and source
     try {
       if (sourceNodeRef.current && workletNodeRef.current) {
         sourceNodeRef.current.disconnect(workletNodeRef.current);
@@ -215,7 +208,6 @@ export const VoiceChat = () => {
     workletNodeRef.current = null;
     sourceNodeRef.current = null;
 
-    // Stop and close AudioContext
     if (audioContextRef.current) {
       const ctx = audioContextRef.current;
       audioContextRef.current = null;
@@ -224,9 +216,8 @@ export const VoiceChat = () => {
       } catch { }
     }
 
-    // Stop mic tracks
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
   };
@@ -279,7 +270,6 @@ export const VoiceChat = () => {
     }
   };
 
-  // Cleanup on component unmount
   useEffect(() => {
     return () => {
       handleEndCall();
@@ -290,14 +280,12 @@ export const VoiceChat = () => {
     setIsMuted((prev) => !prev);
   };
 
-  // Reflect mute/volume changes to current playback
   useEffect(() => {
     if (audioPlaybackRef.current) {
       audioPlaybackRef.current.volume = isMuted ? 0 : volume;
     }
   }, [isMuted, volume]);
 
-  // Helper: base64 string -> Uint8Array
   function base64ToUint8Array(base64: string): Uint8Array {
     const binaryString = atob(base64);
     const len = binaryString.length;
@@ -310,14 +298,17 @@ export const VoiceChat = () => {
 
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="p-4 border-b">
-        <h1 className="text-2xl font-bold text-center">innpae</h1>
-        <p className="text-center text-muted-foreground mt-1">
-          Your safe space to talk and be heard
-        </p>
-      </div>
+    <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
+      {/* Gradient pulse background */}
+      <div
+        className={`absolute inset-0 transition-all duration-1000 ${
+          isRecording ? "opacity-100 animate-pulse-glow" : "opacity-0"
+        }`}
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(76,154,255,0.25), rgba(20,20,19,0.9))",
+        }}
+      />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -432,6 +423,27 @@ export const VoiceChat = () => {
           </span>
         </div>
       </div>
+
+      {/* Pulse animation */}
+      <style jsx global>{`
+        @keyframes pulse-glow {
+          0% {
+            opacity: 0.5;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+          100% {
+            opacity: 0.5;
+            transform: scale(1);
+          }
+        }
+        .animate-pulse-glow {
+          animation: pulse-glow 3s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };
