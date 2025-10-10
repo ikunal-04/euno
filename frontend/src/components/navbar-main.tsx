@@ -4,8 +4,7 @@ import { signIn, signOut } from 'next-auth/react'
 import Image from 'next/image'
 import PricingButton from "@/components/pricingButton"
 import { useUserStore } from '@/store/useUser'
-import Logo from "@/components/logo"
-
+ import Logo from "@/components/logo"
 
 const NavBarMain = () => {
 
@@ -16,18 +15,11 @@ const NavBarMain = () => {
   return (
     <div>
        {/* Navigation - Made fixed and added background/shadow for visibility */}
-       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4">
+       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 py-4 ">
         
-        {/* Logo - Using the user-provided motion.div structure */}
-        <motion.div
-            className="cursor-pointer"
-            // Replaced router.push with simple window reload for simulation
-            onClick={() => window.location.reload()}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
+       
             <Logo />
-          </motion.div>
+          
           <PricingButton />
           {user ? (
             <div className="relative" ref={dropdownRef}>

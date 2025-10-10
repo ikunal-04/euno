@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from "lucide-react";
+import { Mic, Volume2, VolumeX, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Message {
   id: string;
@@ -47,7 +48,6 @@ export const VoiceChat = () => {
             text: data.text,
             timestamp: new Date(),
           };
-          // setMessages((prev) => [...prev, userMessage]); // 🧠 Commented: no text chat display
           setCurrentUserText("");
         }
       }
@@ -60,7 +60,6 @@ export const VoiceChat = () => {
             text: data.text,
             timestamp: new Date(),
           };
-          // setMessages((prev) => [...prev, agentMessage]); // 🧠 Commented: hide agent text
           setCurrentAgentText("");
         }
 
@@ -307,75 +306,164 @@ export const VoiceChat = () => {
     return null;
   }
 
-  // 🌀 Modified return: Minimal gradient-circle voice interface
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
       {/* Gradient pulse background */}
       <div
         className={`absolute inset-0 transition-all duration-1000 ${
-          isRecording ? "opacity-100 animate-pulse-glow" : "opacity-0"
+          isRecording || isPlaying ? "opacity-100 animate-pulse-glow" : "opacity-0"
         }`}
         style={{
           background:
-            "radial-gradient(circle at center, rgba(76,154,255,0.25), rgba(20,20,19,0.9))",
+            "radial-gradient(circle at center, rgba(76,154,255,0.15), rgba(20,20,19,0.9))",
         }}
       />
 
-      {/* Central glowing circle */}
-      <div className="relative z-10 flex flex-col items-center space-y-6">
-        <Button
-          onClick={isCallActive ? handleEndCall : handleStartCall}
-          size="lg"
-          className={`rounded-full w-36 h-36 transition-all duration-700 shadow-[0_0_60px_rgba(59,130,246,0.6)] ${
-            isCallActive
-              ? "bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
-              : "bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800"
-          } ${isRecording ? "scale-110" : "scale-100"}`}
-        >
-          {isCallActive ? (
-            <Mic className="h-10 w-10 text-white" />
+      <div className="relative z-10 flex flex-col items-center space-y-8">
+        <AnimatePresence mode="wait">
+          {!isCallActive ? (
+            /* Single Circle - Start Call */
+            <motion.div
+              key="single-circle"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col items-center space-y-4"
+            >
+              <Button
+                onClick={handleStartCall}
+                size="lg"
+                className="rounded-full w-36 h-36 transition-all duration-500 shadow-[0_0_60px_rgba(59,130,246,0.6)] bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 hover:scale-105"
+              >
+                <Phone className="h-10 w-10 text-white" />
+              </Button>
+              <div className="text-center text-gray-400 text-sm">
+                Tap to start
+              </div>
+            </motion.div>
           ) : (
-            <Phone className="h-10 w-10 text-white" />
+            /* Three Circles - Active Call */
+            <motion.div
+              key="three-circles"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex items-center justify-center gap-8"
+            >
+              {/* Left Circle - User Speaking */}
+              <motion.div
+                className="flex flex-col items-center space-y-3"
+                animate={
+                  isRecording
+                    ? {
+                        scale: [1, 1.1, 1],
+                      }
+                    : {}
+                }
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <div
+                  className={`rounded-full w-28 h-28 flex items-center justify-center transition-all duration-500 ${
+                    isRecording
+                      ? "bg-gradient-to-br from-green-500 to-emerald-600 shadow-[0_0_40px_rgba(34,197,94,0.7)]"
+                      : "bg-gradient-to-br from-gray-700 to-gray-800 shadow-[0_0_20px_rgba(100,100,100,0.3)]"
+                  }`}
+                >
+                  <Mic className={`h-8 w-8 ${isRecording ? "text-white" : "text-gray-400"}`} />
+                </div>
+                <div className="text-center text-gray-400 text-xs">
+                  You
+                </div>
+              </motion.div>
+
+              {/* Center Circle - End Call */}
+              <motion.div
+                className="flex flex-col items-center space-y-3"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button
+                  onClick={handleEndCall}
+                  size="lg"
+                  className="rounded-full w-32 h-32 transition-all duration-500 shadow-[0_0_50px_rgba(239,68,68,0.6)] bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800"
+                >
+                  <Phone className="h-9 w-9 text-white rotate-[135deg]" />
+                </Button>
+                <div className="text-center text-gray-400 text-xs">
+                  End Call
+                </div>
+              </motion.div>
+
+              {/* Right Circle - AI Speaking */}
+              <motion.div
+                className="flex flex-col items-center space-y-3"
+                animate={
+                  isPlaying
+                    ? {
+                        scale: [1, 1.1, 1],
+                      }
+                    : {}
+                }
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <div
+                  className={`rounded-full w-28 h-28 flex items-center justify-center transition-all duration-500 ${
+                    isPlaying
+                      ? "bg-gradient-to-br from-blue-500 to-indigo-600 shadow-[0_0_40px_rgba(59,130,246,0.7)]"
+                      : "bg-gradient-to-br from-gray-700 to-gray-800 shadow-[0_0_20px_rgba(100,100,100,0.3)]"
+                  }`}
+                >
+                  <Volume2 className={`h-8 w-8 ${isPlaying ? "text-white" : "text-gray-400"}`} />
+                </div>
+                <div className="text-center text-gray-400 text-xs">
+                  AI
+                </div>
+              </motion.div>
+            </motion.div>
           )}
-        </Button>
+        </AnimatePresence>
 
-        {/* Status */}
-        <div className="text-center text-gray-400 text-sm">
-          {isCallActive
-            ? isRecording
-              ? "Listening..."
-              : isPlaying
-              ? "Speaking..."
-              : "Connected"
-            : "Tap to start"}
-        </div>
-
-        {/* Volume controls */}
-        <div className="flex items-center space-x-2 mt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggleMute}
-            disabled={!isCallActive}
-            className="bg-transparent border-gray-600 text-gray-300 hover:bg-[#232322]"
+        {/* Volume controls - only show when call is active */}
+        {isCallActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center space-x-3 mt-4"
           >
-            {isMuted ? (
-              <VolumeX className="h-4 w-4" />
-            ) : (
-              <Volume2 className="h-4 w-4" />
-            )}
-          </Button>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="w-20 accent-blue-400"
-            disabled={!isCallActive}
-          />
-        </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleMute}
+              className="bg-transparent border-gray-600 text-gray-300 hover:bg-[#232322]"
+            >
+              {isMuted ? (
+                <VolumeX className="h-4 w-4" />
+              ) : (
+                <Volume2 className="h-4 w-4" />
+              )}
+            </Button>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={(e) => setVolume(Number(e.target.value))}
+              className="w-24 accent-blue-400"
+            />
+          </motion.div>
+        )}
       </div>
 
       {/* Pulse animation */}

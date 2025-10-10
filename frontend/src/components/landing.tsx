@@ -3,49 +3,52 @@
 import React from "react";
 import NavLanding from "@/components/nav-landing";
 import { signIn } from "next-auth/react";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
 
-const playfair = Playfair_Display({
+// Elegant serif font for the main heading
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
+// Sleek and modern sans-serif for body and UI elements
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
-export default function MindSpaceLanding() {
+export default function EunoLandingPage() {
   return (
-    <div className="min-h-screen bg-[#121211] text-[#f8f8f6] flex flex-col">
+    <div className="min-h-screen bg-[#121211] text-[#f8f8f6] flex flex-col overflow-hidden">
       <NavLanding />
 
-      <div className="flex flex-1 flex-col lg:flex-row items-center justify-between max-w-7xl mx-auto w-full px-6 lg:px-16 py-20 gap-14">
+      <div className="flex flex-1 flex-col lg:flex-row items-center justify-between max-w-[1300px] mx-auto w-full px-6 lg:px-16 py-20 gap-12">
         {/* ===== Left Section ===== */}
-        <div className="flex-1 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-10">
+        <div className="flex-1 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-8 z-10">
           {/* Heading */}
           <h1
-            className={`${playfair.className} text-[3.5rem] md:text-[4.5rem] leading-[1.15] font-medium tracking-tight`}
+            className={`${cormorant.className} text-[3rem] md:text-[4rem] leading-[1.1] font-semibold tracking-tight`}
           >
-            <span className="block text-[#f5f4f0]/90">You’re not alone.</span>
-            <span className="block text-[#f5f4f0] font-semibold">
-              MindSpace is here.
+            <span className="block font-semibold text-[#f5f4f0]/85">
+              Where thoughts
+            </span>
+            <span className="block text-[#f5f4f0] font-bold">
+              find their voice.
             </span>
           </h1>
 
           {/* Subtitle */}
           <p
-            className={`${dmSans.className} text-lg md:text-xl text-[#f5f4f0]/75 max-w-md`}
+            className={`${jakarta.className} text-base md:text-lg text-[#f5f4f0]/70 max-w-sm leading-relaxed`}
           >
-           Your calm in the chaos — always there to listen. 
-            
+            euno is your private companion for reflection, conversation, and gentle guidance.
           </p>
 
           {/* Sign In Card */}
-          <div className="bg-[#1a1a19] border border-[#2a2928] rounded-2xl p-8 shadow-xl w-[340px] backdrop-blur-sm">
+          <div className="bg-[#1a1a19]/70 border border-[#2a2928] rounded-2xl p-7 shadow-xl w-[320px] backdrop-blur-sm">
             <button
               onClick={() => signIn("google")}
-              className={`${dmSans.className} w-full flex items-center justify-center gap-3 px-6 py-3 bg-[#121211] border border-[#2a2928] rounded-xl text-lg font-medium text-[#f5f4f0] 
+              className={`${jakarta.className} w-full flex items-center justify-center gap-3 px-6 py-3 bg-[#121211] border border-[#2a2928] rounded-xl text-base font-medium text-[#f5f4f0] 
                 transition-all duration-300 hover:bg-[#1c1b1a] hover:border-[#3a3938] hover:shadow-[0_0_25px_rgba(245,244,240,0.08)]`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -72,15 +75,18 @@ export default function MindSpaceLanding() {
         </div>
 
         {/* ===== Right Section - Video ===== */}
-        <div className="flex-1 flex justify-center lg:justify-end w-full">
-          <video
-            className="rounded-3xl shadow-2xl w-full max-w-[600px] h-auto object-cover"
-            src="/video.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
+        <div className="flex-1 flex justify-center lg:justify-end w-full relative">
+          <div className="relative w-full h-[65vh] lg:h-[80vh] max-w-none lg:max-w-[720px] overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+            <video
+              className="absolute inset-0 w-full h-full object-cover object-center rounded-3xl"
+              src="/video.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+            <div className="absolute inset-0 bg-gradient-to-l from-[#121211]/40 to-transparent rounded-3xl pointer-events-none" />
+          </div>
         </div>
       </div>
     </div>

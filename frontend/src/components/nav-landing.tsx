@@ -27,16 +27,13 @@ const NavLanding = () => {
             About
           </button>
           <button className="text-[#faf9f5] hover:text-white transition-colors text-sm font-light">
-            Features
-          </button>
-          <button className="text-[#faf9f5] hover:text-white transition-colors text-sm font-light">
             Pricing
           </button>
           <button className="text-[#faf9f5] hover:text-white transition-colors text-sm font-light">
-            Contact Sales
+            Contact
           </button>
           <button className="px-5 py-2 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors shadow-lg">
-            Try MindSpace
+            Try Euno
           </button>
         </div>
       </nav>
