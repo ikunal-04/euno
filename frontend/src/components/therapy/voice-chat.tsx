@@ -34,7 +34,7 @@ export const VoiceChat = () => {
 
 
   const connectWebSocket = () => {
-    const ws = new WebSocket('wss://euno-766343988995.europe-west1.run.app/ws/audio');
+    const ws = new WebSocket('wss://api.euno.live/ws/audio');
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -79,8 +79,7 @@ export const VoiceChat = () => {
 
         // Handle audio (both streaming and complete)
         if (data.audio_data && (data.status === 'streaming' || data.status === 'complete')) {
-          try {
-            console.log('🔊 Received audio chunk:', data.audio_mime_type);
+          try { 
 
             const mime = (data.audio_mime_type || '').toLowerCase();
             const u8 = base64ToUint8Array(data.audio_data);

@@ -103,7 +103,6 @@ class DeepgramTTSService:
                         elif isinstance(message, bytes):
                             # Audio data
                             audio_chunks.append(message)
-                            print(f"🎵 Received audio chunk: {len(message)} bytes")
                             
                     except asyncio.TimeoutError:
                         # No message received in timeout period
