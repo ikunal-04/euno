@@ -1,14 +1,12 @@
 import { Metadata } from 'next';
 
-const TITLE =
-  'Take your development skills from 0 to 100 and join the 100xdevs community';
+const TITLE = 'Euno — Your AI Companion for Life\'s Moments';
 const DESCRIPTION =
-  'This is an initiative by Harkirat Singh to personally mentor folks in the field of Programming. Join him in his first course on Full Stack development with a heavy focus on Open source projects to learn programming practically.';
+  'Euno is your always-available AI companion that adapts to be the friend, parent, teacher, or confidant you need. Share your thoughts, relieve stress, combat loneliness, and talk through life\'s challenges with an AI that truly listens and understands.';
 
-const PREVIEW_IMAGE_URL = 'https://app.100xdevs/banner-img.jpeg';
-const ALT_TITLE =
-  '100xdevs - Take your programming skills from 0 to 100 with Harkirat Singh';
-const BASE_URL = 'https://app.100xdevs.com';
+const PREVIEW_IMAGE_URL = 'https://euno.live/og-banner.png'; // 🔹 Replace with your actual OG image URL
+const ALT_TITLE = 'Euno - Your Personal AI Companion & Emotional Support';
+const BASE_URL = 'https://euno.live';
 
 export const siteConfig: Metadata = {
   title: TITLE,
@@ -16,13 +14,38 @@ export const siteConfig: Metadata = {
   icons: {
     icon: '/favicon.ico',
   },
-  applicationName: '100xdevs',
-  creator: 'Harkirat',
+  applicationName: 'Euno',
+  creator: 'Euno Team',
+  category: 'AI Technology',
+  metadataBase: new URL(BASE_URL),
+
+  alternates: {
+    canonical: BASE_URL,
+  },
+
+  keywords: [
+    'AI companion',
+    'Euno AI',
+    'emotional support AI',
+    'AI friend',
+    'stress relief app',
+    'loneliness solution',
+    'AI confidant',
+    'mental wellness',
+    'voice companion',
+    'someone to talk to',
+    'AI emotional support',
+    'reduce anxiety',
+    'personal AI assistant',
+    'artificial intelligence companion',
+    'empathetic AI',
+  ],
+
   twitter: {
-    creator: '@kirat_tw',
+    card: 'summary_large_image',
+    creator: '@euno_ai', // 🔹 Replace with your handle if available
     title: TITLE,
     description: DESCRIPTION,
-    card: 'summary_large_image',
     images: [
       {
         url: PREVIEW_IMAGE_URL,
@@ -32,10 +55,11 @@ export const siteConfig: Metadata = {
       },
     ],
   },
+
   openGraph: {
     title: TITLE,
     description: DESCRIPTION,
-    siteName: '100xdevs',
+    siteName: 'Euno',
     url: BASE_URL,
     locale: 'en_US',
     type: 'website',
@@ -48,19 +72,4 @@ export const siteConfig: Metadata = {
       },
     ],
   },
-  category: 'Technology',
-  alternates: {
-    canonical: BASE_URL,
-  },
-  keywords: [
-    'Javascript for begginers',
-    'Learn from the expert',
-    'MERN stack',
-    '100xdevs',
-    'Harkirat Cohort',
-    'Devops',
-    'Advanced Backend',
-    'Javscript to typescript',
-  ],
-  metadataBase: new URL(BASE_URL),
 };
