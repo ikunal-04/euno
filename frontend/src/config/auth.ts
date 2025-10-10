@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/db/server";
 import GoogleProvider from "next-auth/providers/google";
-import { NextAuthOptions } from "next-auth";
+import type {
+    GetServerSidePropsContext,
+    NextApiRequest,
+    NextApiResponse,
+} from "next"
+import type { NextAuthOptions } from "next-auth"
+import { getServerSession } from "next-auth"
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -63,4 +69,13 @@ export const authOptions: NextAuthOptions = {
             return '/'
         }
     }
-};
+} satisfies NextAuthOptions;
+
+export function auth(
+    ...args:
+        | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]
+        | [NextApiRequest, NextApiResponse]
+        | []
+) {
+    return getServerSession(...args, authOptions)
+}

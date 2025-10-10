@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
-import { useUserStore } from "@/store/useUser";
+import { useUserStore } from "@/store/user";
 
 function SyncUserWithStore() {
   const { data: session, status } = useSession();
@@ -11,19 +11,31 @@ function SyncUserWithStore() {
   const setLoading = useUserStore((state) => state.setLoading);
 
   useEffect(() => {
-    // While NextAuth is still loading → stay in loading state
-    if (status === "loading") {
-      setLoading(true);
-      return;
-    }
+    const fetchUser = async () => {
+      try {
+        setLoading(true);
+        if (status === "loading") return;
 
-    if (status === "authenticated" && session?.user) {
-      setUser(session.user);
-    } else {
-      clearUser();
-    }
+        if (status === "authenticated" && session?.user) {
+          const res = await fetch("/api/user");
+          if (res.ok) {
+            const data = await res.json();
+            setUser(data.user);
+          } else {
+            setUser(session.user);
+          }
+        } else {
+          clearUser();
+        }
+      } catch (err) {
+        console.error("Failed to sync user:", err);
+        clearUser();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(false);
+    fetchUser();
   }, [session, status, setUser, clearUser, setLoading]);
 
   return null;

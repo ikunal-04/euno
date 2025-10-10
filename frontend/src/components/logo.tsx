@@ -154,7 +154,7 @@ const Logo = () => {
 
       {/* Brand name */}
       <motion.h1
-        className="text-xl font-medium text-white tracking-wider"
+        className="text-xl font-bold text-white tracking-wider"
         style={{ x: useTransform(xSpring, [0, 10], [0, 2]) }}
       >
         Euno

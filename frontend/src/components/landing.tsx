@@ -3,8 +3,8 @@
 import React from "react";
 import NavLanding from "@/components/nav-landing";
 import { signIn } from "next-auth/react";
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
-
+import { Cormorant_Garamond } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 // Elegant serif font for the main heading
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -12,7 +12,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 // Sleek and modern sans-serif for body and UI elements
-const jakarta = Plus_Jakarta_Sans({
+const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
@@ -29,27 +29,25 @@ export default function EunoLandingPage() {
           <h1
             className={`${cormorant.className} text-[3rem] md:text-[4rem] leading-[1.1] font-semibold tracking-tight`}
           >
-            <span className="block font-semibold text-[#f5f4f0]/85">
-              Where thoughts
-            </span>
-            <span className="block text-[#f5f4f0] font-bold">
-              find their voice.
+            <span className="block text-[#f5f4f0]/90">Where thoughts</span>
+            <span className="block text-[#f5f4f0] font-semibold">
+            find their voice.
             </span>
           </h1>
 
           {/* Subtitle */}
           <p
-            className={`${jakarta.className} text-base md:text-lg text-[#f5f4f0]/70 max-w-sm leading-relaxed`}
+            className={`${dmSans.className} text-base md:text-lg text-[#f5f4f0]/70 max-w-sm leading-relaxed`}
           >
-            euno is your private companion for reflection, conversation, and gentle guidance.
+           Euno is your private companion for reflection, conversation, and gentle guidance.
           </p>
 
           {/* Sign In Card */}
-          <div className="bg-[#1a1a19]/70 border border-[#2a2928] rounded-2xl p-7 shadow-xl w-[320px] backdrop-blur-sm">
+          {/* <div className="bg-[#1a1a19] border border-[#2a2928] rounded-2xl p-8 shadow-xl w-[340px] backdrop-blur-sm"> */}
             <button
               onClick={() => signIn("google")}
-              className={`${jakarta.className} w-full flex items-center justify-center gap-3 px-6 py-3 bg-[#121211] border border-[#2a2928] rounded-xl text-base font-medium text-[#f5f4f0] 
-                transition-all duration-300 hover:bg-[#1c1b1a] hover:border-[#3a3938] hover:shadow-[0_0_25px_rgba(245,244,240,0.08)]`}
+              className={`${dmSans.className} flex items-center justify-center gap-3 px-6 py-3  p-8 shadow-xl w-[340px] bg-[#121211] border border-[#2a2928] rounded-xl text-lg font-medium text-[#f5f4f0] 
+                transition-all duration-300 hover:bg-black`}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -72,7 +70,7 @@ export default function EunoLandingPage() {
               <span>Continue with Google</span>
             </button>
           </div>
-        </div>
+        {/* </div> */}
 
         {/* ===== Right Section - Video ===== */}
         <div className="flex-1 flex justify-center lg:justify-end w-full relative">
