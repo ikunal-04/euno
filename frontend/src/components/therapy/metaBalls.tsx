@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Renderer, Program, Mesh, Triangle, Transform, Vec3, Camera } from 'ogl';
 
 type MetaBallsProps = {
-  color?: string;
+  gradientColors?: string[];
   speed?: number;
   enableMouseInteraction?: boolean;
   hoverSmoothness?: number;
@@ -10,8 +10,8 @@ type MetaBallsProps = {
   ballCount?: number;
   clumpFactor?: number;
   cursorBallSize?: number;
-  cursorBallColor?: string;
   enableTransparency?: boolean;
+  cloudiness?: number;
 };
 
 function parseHexColor(hex: string): [number, number, number] {
@@ -66,43 +66,124 @@ precision highp float;
 uniform vec3 iResolution;
 uniform float iTime;
 uniform vec3 iMouse;
-uniform vec3 iColor;
-uniform vec3 iCursorColor;
+uniform vec3 iGradientColors[5];
+uniform int iGradientColorCount;
 uniform float iAnimationSize;
 uniform int iBallCount;
 uniform float iCursorBallSize;
 uniform vec3 iMetaBalls[50];
-uniform float iClumpFactor;
 uniform bool enableTransparency;
+uniform float iCloudiness;
 out vec4 outColor;
-const float PI = 3.14159265359;
+
+// Enhanced 2D Simplex Noise with multiple octaves for more natural cloud patterns
+vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+
+float snoise(vec2 v) {
+    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+    vec2 i  = floor(v + dot(v, C.yy));
+    vec2 x0 = v - i + dot(i, C.xx);
+    vec2 i1;
+    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec4 x12 = x0.xyxy + C.xxzz;
+    x12.xy -= i1;
+    i = mod(i, 289.0);
+    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+    m = m*m;
+    m = m*m;
+    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+    vec3 h = abs(x) - 0.5;
+    vec3 ox = floor(x + 0.5);
+    vec3 a0 = x - ox;
+    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+    vec3 g;
+    g.x  = a0.x  * x0.x  + h.x  * x0.y;
+    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+    return 130.0 * dot(m, g);
+}
+
+// Fractal Brownian Motion for layered cloud effect
+float fbm(vec2 p) {
+    float value = 0.0;
+    float amplitude = 0.5;
+    float frequency = 1.0;
+    
+    for(int i = 0; i < 4; i++) {
+        value += amplitude * snoise(p * frequency);
+        frequency *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
  
 float getMetaBallValue(vec2 c, float r, vec2 p) {
     vec2 d = p - c;
     float dist2 = dot(d, d);
-    return (r * r) / dist2;
+    return (r * r) / (dist2 + 0.1); 
+}
+
+vec3 lerpColor(vec3 color1, vec3 color2, float t) {
+    return color1 + (color2 - color1) * smoothstep(0.0, 1.0, t);
 }
  
 void main() {
     vec2 fc = gl_FragCoord.xy;
     float scale = iAnimationSize / iResolution.y;
     vec2 coord = (fc - iResolution.xy * 0.5) * scale;
+    
+    // Create multi-layered turbulence for realistic cloud/sky effect
+    float timeFlow = iTime * 0.03;
+    
+    // Primary large-scale cloud movement
+    vec2 displacement1 = vec2(
+        fbm(coord * 0.08 + vec2(timeFlow, 0.0)),
+        fbm(coord * 0.08 + vec2(0.0, timeFlow) + vec2(5.2, 1.3))
+    );
+    
+    // Secondary fine detail turbulence
+    vec2 displacement2 = vec2(
+        snoise(coord * 0.2 + iTime * 0.08 + vec2(3.5, 1.2)),
+        snoise(coord * 0.2 + iTime * 0.08 + vec2(8.3, 4.7))
+    );
+    
+    // Combine displacements with different weights for natural cloud flow
+    vec2 totalDisplacement = displacement1 * iCloudiness + displacement2 * (iCloudiness * 0.3);
+    vec2 distortedCoord = coord + totalDisplacement;
+
     vec2 mouseW = (iMouse.xy - iResolution.xy * 0.5) * scale;
-    float m1 = 0.0;
+    float total = 0.0;
+    
     for (int i = 0; i < 50; i++) {
         if (i >= iBallCount) break;
-        m1 += getMetaBallValue(iMetaBalls[i].xy, iMetaBalls[i].z, coord);
+        total += getMetaBallValue(iMetaBalls[i].xy, iMetaBalls[i].z, distortedCoord);
     }
-    float m2 = getMetaBallValue(mouseW, iCursorBallSize, coord);
-    float total = m1 + m2;
-    float f = smoothstep(-1.0, 1.0, (total - 1.3) / min(1.0, fwidth(total)));
-    vec3 cFinal = vec3(0.0);
-    if (total > 0.0) {
-        float alpha1 = m1 / total;
-        float alpha2 = m2 / total;
-        cFinal = iColor * alpha1 + iCursorColor * alpha2;
+    total += getMetaBallValue(mouseW, iCursorBallSize, distortedCoord);
+    
+    // Enhanced gradient mapping for sky/cloud transitions
+    float normalizedTotal = clamp(total * 0.12, 0.0, 1.8);
+    
+    // Add subtle noise variation to the gradient for more organic appearance
+    float noiseVariation = fbm(distortedCoord * 0.5 + iTime * 0.02) * 0.1;
+    normalizedTotal = clamp(normalizedTotal + noiseVariation, 0.0, 1.8);
+
+    vec3 finalGradientColor = vec3(0.0);
+    if (iGradientColorCount == 1) {
+        finalGradientColor = iGradientColors[0];
+    } else {
+        float gradientIndex = normalizedTotal * float(iGradientColorCount - 1);
+        int idx1 = int(floor(gradientIndex));
+        int idx2 = min(idx1 + 1, iGradientColorCount - 1);
+        float t = fract(gradientIndex);
+        
+        // Smooth color blending
+        finalGradientColor = lerpColor(iGradientColors[idx1], iGradientColors[idx2], t);
     }
-    outColor = vec4(cFinal * f, enableTransparency ? f : 1.0);
+
+    // Soft alpha for cloud-like edges
+    float alpha = smoothstep(0.6, 1.4, total); 
+
+    outColor = vec4(finalGradientColor, enableTransparency ? alpha : 1.0);
 }
 `;
 
@@ -115,7 +196,7 @@ type BallParams = {
 };
 
 const MetaBalls: React.FC<MetaBallsProps> = ({
-  color = '#ffffff',
+  gradientColors = ['#0A2A70', '#0179fe', '#5D7DCA', '#a8e3ff', '#FFFFFF'],
   speed = 0.3,
   enableMouseInteraction = true,
   hoverSmoothness = 0.05,
@@ -123,8 +204,8 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
   ballCount = 15,
   clumpFactor = 1,
   cursorBallSize = 3,
-  cursorBallColor = '#ffffff',
-  enableTransparency = false
+  enableTransparency = false,
+  cloudiness = 2.5
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -143,18 +224,23 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
     container.appendChild(gl.canvas);
 
     const camera = new Camera(gl, {
-      left: -1,
-      right: 1,
-      top: 1,
-      bottom: -1,
-      near: 0.1,
-      far: 10
+      left: -1, right: 1, top: 1, bottom: -1, near: 0.1, far: 10
     });
     camera.position.z = 1;
 
     const geometry = new Triangle(gl);
-    const [r1, g1, b1] = parseHexColor(color);
-    const [r2, g2, b2] = parseHexColor(cursorBallColor);
+    
+    const maxGradientColors = 5;
+    const glGradientColors: Vec3[] = [];
+    const actualGradientColors = gradientColors.slice(0, maxGradientColors);
+    actualGradientColors.forEach(hexColor => {
+      const [r, g, b] = parseHexColor(hexColor);
+      glGradientColors.push(new Vec3(r, g, b));
+    });
+
+    while (glGradientColors.length < maxGradientColors) {
+      glGradientColors.push(new Vec3(0, 0, 0));
+    }
 
     const metaBallsUniform: Vec3[] = [];
     for (let i = 0; i < 50; i++) {
@@ -168,14 +254,14 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
         iTime: { value: 0 },
         iResolution: { value: new Vec3(0, 0, 0) },
         iMouse: { value: new Vec3(0, 0, 0) },
-        iColor: { value: new Vec3(r1, g1, b1) },
-        iCursorColor: { value: new Vec3(r2, g2, b2) },
+        iGradientColors: { value: glGradientColors },
+        iGradientColorCount: { value: actualGradientColors.length },
         iAnimationSize: { value: animationSize },
         iBallCount: { value: ballCount },
         iCursorBallSize: { value: cursorBallSize },
         iMetaBalls: { value: metaBallsUniform },
-        iClumpFactor: { value: clumpFactor },
-        enableTransparency: { value: enableTransparency }
+        enableTransparency: { value: enableTransparency },
+        iCloudiness: { value: cloudiness }
       }
     });
 
@@ -223,17 +309,13 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
       pointerX = (px / rect.width) * gl.canvas.width;
       pointerY = (1 - py / rect.height) * gl.canvas.height;
     }
-    function onPointerEnter() {
-      if (!enableMouseInteraction) return;
-      pointerInside = true;
+    function onPointerEnter() { pointerInside = true; }
+    function onPointerLeave() { pointerInside = false; }
+    if (enableMouseInteraction) {
+      container.addEventListener('pointermove', onPointerMove);
+      container.addEventListener('pointerenter', onPointerEnter);
+      container.addEventListener('pointerleave', onPointerLeave);
     }
-    function onPointerLeave() {
-      if (!enableMouseInteraction) return;
-      pointerInside = false;
-    }
-    container.addEventListener('pointermove', onPointerMove);
-    container.addEventListener('pointerenter', onPointerEnter);
-    container.addEventListener('pointerleave', onPointerLeave);
 
     const startTime = performance.now();
     let animationFrameId: number;
@@ -253,8 +335,8 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
         metaBallsUniform[i].set(posX, posY, p.radius);
       }
 
-      let targetX: number, targetY: number;
-      if (pointerInside) {
+      let targetX, targetY;
+      if (enableMouseInteraction && pointerInside) { 
         targetX = pointerX;
         targetY = pointerY;
       } else {
@@ -262,8 +344,8 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
         const cy = gl.canvas.height * 0.5;
         const rx = gl.canvas.width * 0.15;
         const ry = gl.canvas.height * 0.15;
-        targetX = cx + Math.cos(elapsed * speed) * rx;
-        targetY = cy + Math.sin(elapsed * speed) * ry;
+        targetX = cx + Math.cos(elapsed * speed * 0.5) * rx; 
+        targetY = cy + Math.sin(elapsed * speed * 0.5) * ry;
       }
       mouseBallPos.x += (targetX - mouseBallPos.x) * hoverSmoothness;
       mouseBallPos.y += (targetY - mouseBallPos.y) * hoverSmoothness;
@@ -276,23 +358,18 @@ const MetaBalls: React.FC<MetaBallsProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', resize);
-      container.removeEventListener('pointermove', onPointerMove);
-      container.removeEventListener('pointerenter', onPointerEnter);
-      container.removeEventListener('pointerleave', onPointerLeave);
+      if (enableMouseInteraction) {
+        container.removeEventListener('pointermove', onPointerMove);
+        container.removeEventListener('pointerenter', onPointerEnter);
+        container.removeEventListener('pointerleave', onPointerLeave);
+      }
       container.removeChild(gl.canvas);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
   }, [
-    color,
-    cursorBallColor,
-    speed,
-    enableMouseInteraction,
-    hoverSmoothness,
-    animationSize,
-    ballCount,
-    clumpFactor,
-    cursorBallSize,
-    enableTransparency
+    gradientColors, speed, enableMouseInteraction, hoverSmoothness, 
+    animationSize, ballCount, clumpFactor, cursorBallSize, 
+    enableTransparency, cloudiness
   ]);
 
   return <div ref={containerRef} className="w-full h-full relative" />;

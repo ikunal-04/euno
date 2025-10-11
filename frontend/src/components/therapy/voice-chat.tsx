@@ -1,9 +1,16 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Volume2, VolumeX, Phone, PhoneOff, MicOff, X } from "lucide-react";
+import { Mic, X } from "lucide-react";
 import MetaBalls from "../MetaBalls";
-import CardSwap, { Card } from "./flowingMenu";
+import { 
+  Smile, 
+  Frown, 
+  HeartPulse, 
+  Angry as AngryIcon, // Renamed to avoid conflicts
+  Feather, 
+  Sparkles 
+} from "lucide-react";
 
 interface Message {
   id: string;
@@ -21,6 +28,7 @@ export const VoiceChat = () => {
   const [volume, setVolume] = useState(0.8);
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMoodMenuOpen, setIsMoodMenuOpen] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -32,6 +40,40 @@ export const VoiceChat = () => {
   const isPlayingRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const playTimeRef = useRef(0);
+
+  // Get responsive MetaBalls config based on screen size
+  const [metaBallConfig, setMetaBallConfig] = useState({
+    ballCount: 20,
+    animationSize: 70,
+    cursorBallSize: 2
+  });
+
+  useEffect(() => {
+    const updateMetaBallConfig = () => {
+      const width = window.innerWidth;
+      
+      if (width < 640) {
+        // Mobile: fewer balls, smaller animation
+        setMetaBallConfig({ ballCount: 12, animationSize: 40, cursorBallSize: 1.5 });
+      } else if (width < 1024) {
+        // Tablet: medium configuration
+        setMetaBallConfig({ ballCount: 16, animationSize: 55, cursorBallSize: 2 });
+      } else if (width < 1440) {
+        // Desktop: default configuration
+        setMetaBallConfig({ ballCount: 20, animationSize: 70, cursorBallSize: 2 });
+      } else {
+        // Large screens: more balls, larger animation
+        setMetaBallConfig({ ballCount: 25, animationSize: 85, cursorBallSize: 2.5 });
+      }
+    };
+
+    // Initial setup
+    updateMetaBallConfig();
+
+    // Update on resize
+    window.addEventListener('resize', updateMetaBallConfig);
+    return () => window.removeEventListener('resize', updateMetaBallConfig);
+  }, []);
 
   const connectWebSocket = () => {
     const ws = new WebSocket('wss://api.euno.live/ws/audio');
@@ -297,11 +339,22 @@ export const VoiceChat = () => {
     return bytes;
   }
 
+  const moods = [
+    { icon: Smile,      label: "Happy",   color: "yellow" },
+    { icon: Frown,      label: "Sad",     color: "blue" },
+    { icon: HeartPulse, label: "Anxious", color: "purple" },
+    { icon: AngryIcon,  label: "Angry",   color: "red" },
+    { icon: Feather,    label: "Calm",    color: "green" },
+    { icon: Sparkles,   label: "Excited", color: "orange" }
+  ];
+
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
-      {/* MetaBalls background */}
-      <MetaBalls
-        color="#a8e3ff"
+      {/* MetaBalls background - Responsive configuration */}
+      <div className="absolute inset-0 w-full h-full">
+        <MetaBalls
+          
+          color="#a8e3ff"
         cursorBallColor="#ffffff"
         cursorBallSize={2}
         ballCount={20}
@@ -310,7 +363,8 @@ export const VoiceChat = () => {
         enableTransparency={true}
         clumpFactor={1}
         speed={isPlaying ? 1.0 : 0.4}
-      />
+        />
+      </div>
 
       {/* Audio Waveform Visualization - Top Center */}
       {/* {(isRecording || isPlaying) && (
@@ -360,48 +414,65 @@ export const VoiceChat = () => {
         </div>
       )} */}
 
-      {/* CardSwap Component - Right Side */}
-      <div className="absolute left-[1500px] top-1/2 -translate-y-1/2 h-[200px] w-[100px]">
-        <CardSwap
-          cardDistance={50}
-          verticalDistance={50}
-          delay={5000}
-          pauseOnHover={false}
-        >
-        
-          <Card>
-            <div className="p-6 backdrop-blur-xl rounded-2xl border  shadow-2xl h-full">
-              <h3 className="text-xl font-light text-white mb-3">StoryTeller</h3>
-              <p className="text-sm text-white leading-relaxed">
-                Find your inner peace with calming meditation exercises and breathing techniques.
-              </p>
+      {/* Mood Menu - Horizontal Style */}
+      {/* Mood Menu - Horizontal & Responsive */}
+      {isMoodMenuOpen && (
+        <>
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 animate-fadeIn"
+            onClick={() => setIsMoodMenuOpen(false)}
+          />
+          
+          {/* Responsive Positioning:
+            - The menu is positioned relative to the bottom controls.
+            - `bottom-24` on mobile, `bottom-28` on small tablets, `bottom-32` on larger devices.
+            - `w-[90vw]` ensures it doesn't touch screen edges on mobile, with a `max-w-md` for larger screens.
+          */}
+          <div className="absolute bottom-24 sm:bottom-28 md:bottom-32 left-1/2 -translate-x-1/2 w-[90vw] max-w-md z-50 animate-slideUp">
+            <div className="p-3 sm:p-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a1a]/95 to-[#0f0f0f]/95 backdrop-blur-xl shadow-2xl">
+              {/* Responsive Grid Layout:
+                - `grid-cols-3` on very small screens.
+                - `sm:grid-cols-6` on small screens and up, showing all moods in one row.
+                - `gap-2` creates space between buttons.
+              */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {moods.map((mood) => {
+                   const Icon = mood.icon; // Get the icon component
+                  return (
+                    <button
+                      key={mood.label}
+                      onClick={() => {
+                        console.log(`${mood.label} mood selected`);
+                        setIsMoodMenuOpen(false);
+                      }}
+                      className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-xl transition-all duration-200 hover:scale-110 hover:bg-${mood.color}-500/10 group aspect-square`}
+                    >
+                      {/* Responsive Icon Size */}
+                            <Icon 
+                              className={`h-6 w-6 sm:h-7 sm:w-7 mb-1 text-slate-300 group-hover:text-${mood.color}-400 transition-colors`} 
+                              strokeWidth={1.5}
+                            />
+                      {/* Responsive Text Size */}
+                      <span className="text-[10px] sm:text-xs text-slate-400 group-hover:text-white transition-colors whitespace-nowrap">
+                        {mood.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </Card>
-          <Card>
-            <div className="p-6  backdrop-blur-xl rounded-2xl border border-emerald-700/50 shadow-2xl h-full">
-              <h3 className="text-xl font-light text-white mb-3">Romantic</h3>
-              <p className="text-sm text-white leading-relaxed">
-                Track your mental wellness journey with daily mood reflections and insights.
-              </p>
-            </div>
-          </Card>
-          <Card>
-            <div className="p-6 backdrop-blur-xl rounded-2xl border border-emerald-700/50 shadow-2xl h-full">
-              <h3 className="text-xl font-light text-white mb-3">Sexy</h3>
-              <p className="text-sm text-white leading-relaxed">
-                Track your mental wellness journey with daily mood reflections and insights.
-              </p>
-            </div>
-          </Card>
-        </CardSwap>
-      </div>
+          </div>
+        </>
+      )}
 
-      {/* Centered Control Buttons */}
-      <div className="absolute bottom-12 flex items-center justify-center gap-8">
+      {/* Centered Control Buttons - Fully Responsive */}
+      <div className="absolute bottom-8 sm:bottom-12 md:bottom-16 lg:bottom-14 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 sm:gap-6 md:gap-8 px-4">
         {/* Mic Button with Ripple Effect */}
         <button
           onClick={isCallActive ? handleEndCall : handleStartCall}
           className="relative group"
+          aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
         >
           {/* Ripple rings when recording */}
           {isRecording && (
@@ -412,39 +483,54 @@ export const VoiceChat = () => {
             </>
           )}
           
-          {/* Main button */}
-          <div className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+          {/* Main button - Responsive sizing */}
+          <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
             isRecording
               ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
               : "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-slate-900/50 hover:scale-105"
           }`}>
             {isRecording ? (
-              <Mic className="h-6 w-6 text-white" strokeWidth={2.5} />
+              <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
             ) : (
-              <Mic className="h-6 w-6 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
+              <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
             )}
           </div>
 
-          {/* Button label */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-            <span className="text-xs text-slate-400 font-light">
+          {/* Button label - Responsive positioning */}
+          <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs sm:text-sm text-slate-400 font-light">
               {isRecording ? 'Recording' : 'Start'}
             </span>
           </div>
         </button>
 
-        {/* End Call Button */}
+        {/* Mood Button */}
+        <button
+          onClick={() => setIsMoodMenuOpen(!isMoodMenuOpen)}
+          className="relative group"
+          aria-label="Select Mood"
+        >
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-indigo-500 hover:to-purple-600 shadow-2xl shadow-blue-800/50 hover:shadow-indigo-500/50 hover:scale-105">
+            <Smile className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white transition-colors" strokeWidth={2.5} />
+          </div>
+          <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs sm:text-sm text-slate-400 font-light">Mood</span>
+          </div>
+        </button>
+
+        {/* End Call Button - Responsive sizing */}
         <button
           onClick={handleEndCall}
           className="relative group"
+          aria-label="End Call"
         >
-          <div className="relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-500 hover:to-red-600 shadow-2xl shadow-slate-900/50 hover:shadow-red-500/50 hover:scale-105">
-            <X className="h-7 w-7 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-500 hover:to-red-600 shadow-2xl shadow-slate-900/50 hover:shadow-red-500/50 hover:scale-105">
+            <X className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
           </div>
 
-          {/* Button label */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-            <span className="text-xs text-slate-400 font-light">End Call</span>
+          {/* Button label - Responsive positioning */}
+          <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs sm:text-sm text-slate-400 font-light">End Call</span>
           </div>
         </button>
       </div>
@@ -482,7 +568,16 @@ export const VoiceChat = () => {
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translate(-50%, 20px);
           }
           to {
             opacity: 1;
@@ -499,7 +594,18 @@ export const VoiceChat = () => {
         }
         
         .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+
+        /* Ensure proper spacing on very small screens */
+        @media (max-width: 380px) {
+          .absolute.-bottom-6 {
+            bottom: -1.25rem;
+          }
         }
       `}</style>
     </div>
