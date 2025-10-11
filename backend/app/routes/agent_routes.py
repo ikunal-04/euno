@@ -42,7 +42,7 @@ async def websocket_audio_endpoint(websocket: WebSocket):
             interim_results=True,
             utterance_end_ms="1000",
             vad_events=True,
-            endpointing=300
+            endpointing=1500
         )
         
         loop = asyncio.get_running_loop()

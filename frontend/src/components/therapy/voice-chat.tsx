@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useVoiceChatStore } from "@/store/voice-chat";
+import { useUserStore } from "@/store/user";
 
 interface Message {
   id: string;
@@ -12,14 +14,31 @@ interface Message {
 }
 
 export const VoiceChat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [currentUserText, setCurrentUserText] = useState("");
-  const [currentAgentText, setCurrentAgentText] = useState("");
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(0.8);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const isCallActive = useVoiceChatStore((s) => s.isCallActive);
+  const setIsCallActive = useVoiceChatStore((s) => s.setIsCallActive);
+
+  const currentUserText = useVoiceChatStore((s) => s.currentUserText);
+  const setCurrentUserText = useVoiceChatStore((s) => s.setCurrentUserText);
+
+  const currentAgentText = useVoiceChatStore((s) => s.currentAgentText);
+  const setCurrentAgentText = useVoiceChatStore((s) => s.setCurrentAgentText);
+
+  const isMuted = useVoiceChatStore((s) => s.isMuted);
+  const setIsMuted = useVoiceChatStore((s) => s.setIsMuted);
+
+  const volume = useVoiceChatStore((s) => s.volume);
+  const setVolume = useVoiceChatStore((s) => s.setVolume);
+
+  const isRecording = useVoiceChatStore((s) => s.isRecording);
+  const setIsRecording = useVoiceChatStore((s) => s.setIsRecording);
+
+  const isPlaying = useVoiceChatStore((s) => s.isPlaying);
+  const setIsPlaying = useVoiceChatStore((s) => s.setIsPlaying);
+
+  const onUserFinal = useVoiceChatStore((s) => s.onUserFinal);
+  const onAgentFinal = useVoiceChatStore((s) => s.onAgentFinal);
+
+  const userId = useUserStore((s) => s.user?.userId);
 
   const wsRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -31,10 +50,35 @@ export const VoiceChat = () => {
   const isPlayingRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const playTimeRef = useRef(0);
+  const finalTranscriptRef = useRef<string>("");
+  const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const handleDebouncedFinalTranscript = (text: string) => {
+    // Accumulate text
+    finalTranscriptRef.current += (finalTranscriptRef.current ? " " : "") + text;
+    
+    // Clear existing timeout
+    if (transcriptTimeoutRef.current) {
+      clearTimeout(transcriptTimeoutRef.current);
+    }
+    
+    // Set new timeout - wait 1.5 seconds after last is_final
+    transcriptTimeoutRef.current = setTimeout(() => {
+      if (finalTranscriptRef.current) {
+        // Send ACCUMULATED text
+        if (userId) {
+          onUserFinal(userId, finalTranscriptRef.current);
+        }
+        
+        // Reset
+        finalTranscriptRef.current = "";
+        transcriptTimeoutRef.current = null;
+      }
+    }, 1500);
+  };
 
   const connectWebSocket = () => {
-    const ws = new WebSocket('wss://euno-766343988995.europe-west1.run.app/ws/audio');
+    const ws = new WebSocket('ws://localhost:8000/ws/audio');
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -43,17 +87,19 @@ export const VoiceChat = () => {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "transcription") {
-        setCurrentUserText(data.text);
-
-        // If transcription is final, add to messages
         if (data.is_final) {
-          const userMessage: Message = {
-            id: `user-${Date.now()}`,
-            type: "user",
-            text: data.text,
-            timestamp: new Date(),
-          };
-          // setMessages((prev) => [...prev, userMessage]); // 🧠 Commented: no text chat display
+          // Use debounced handler - it accumulates and sends after timeout
+          handleDebouncedFinalTranscript(data.text);
+        } else {
+          // Show interim results to user
+          setCurrentUserText(data.text);
+        }
+      }
+
+      if (data.type === 'agent_response') {
+        setCurrentUserText(data.text);
+        if (data.is_final) {
+          if (userId) onUserFinal(userId, data.text);
           setCurrentUserText("");
         }
       }
@@ -61,18 +107,10 @@ export const VoiceChat = () => {
       if (data.type === 'agent_response') {
         // Handle text response
         if (typeof data.text === 'string' && data.text.trim().length > 0) {
-          // Only add to messages if it's the final response
           if (data.is_final) {
-            const agentMessage: Message = {
-              id: `agent-${Date.now()}`,
-              type: "agent",
-              text: data.text,
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, agentMessage]);
+            onAgentFinal(userId || "", data.text);
             setCurrentAgentText("");
           } else {
-            // Show streaming text
             setCurrentAgentText(data.text);
           }
         }
@@ -80,7 +118,6 @@ export const VoiceChat = () => {
         // Handle audio (both streaming and complete)
         if (data.audio_data && (data.status === 'streaming' || data.status === 'complete')) {
           try {
-            console.log('🔊 Received audio chunk:', data.audio_mime_type);
 
             const mime = (data.audio_mime_type || '').toLowerCase();
             const u8 = base64ToUint8Array(data.audio_data);
@@ -232,14 +269,7 @@ export const VoiceChat = () => {
     // Start audio capture
     await startAudioCapture();
 
-    // Add welcome message
-    const welcomeMessage: Message = {
-      id: `agent-welcome-${Date.now()}`,
-      type: "agent",
-      text: "Hello! I'm here to listen and support you. Feel free to share whatever is on your mind.",
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, welcomeMessage]);
+    // Optional: You can log a synthetic welcome turn if desired. Leaving UI unchanged.
   };
 
   const handleEndCall = () => {
@@ -252,6 +282,14 @@ export const VoiceChat = () => {
     // Clear audio queue and stop playing
     audioQueueRef.current = [];
     isPlayingRef.current = false;
+
+    if (transcriptTimeoutRef.current) {
+      clearTimeout(transcriptTimeoutRef.current);
+      transcriptTimeoutRef.current = null;
+    }
+    
+    // Clear accumulated transcript
+    finalTranscriptRef.current = "";
 
     // Close audio context
     if (audioCtxRef.current) {
@@ -272,12 +310,13 @@ export const VoiceChat = () => {
 
   useEffect(() => {
     return () => {
+      if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
       handleEndCall();
     };
   }, []);
 
   const handleToggleMute = () => {
-    setIsMuted((prev) => !prev);
+    setIsMuted(!isMuted);
   };
 
   useEffect(() => {
@@ -310,27 +349,8 @@ export const VoiceChat = () => {
         }}
       />
 
-      {/* Messages */}
+      {/* Streamed transcript previews */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[80%] p-3 rounded-lg ${message.type === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-muted text-foreground"
-                }`}
-            >
-              <p className="text-sm">{message.text}</p>
-              <span className="text-xs opacity-70 mt-1 block">
-                {message.timestamp.toLocaleTimeString()}
-              </span>
-            </div>
-          </div>
-        ))}
-
         {/* Current partial messages */}
         {currentUserText && (
           <div className="flex justify-end">

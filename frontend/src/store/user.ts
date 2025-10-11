@@ -3,7 +3,8 @@ import { persist } from "zustand/middleware";
 import { Session } from "next-auth";
 
 type ExtendedUser = Session["user"] & {
-  id?: string;
+  id?: number;
+  userId?: string;
   imageUrl?: string;
   plans?: string | null;
 };
