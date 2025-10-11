@@ -5,10 +5,11 @@ import Image from "next/image";
 import { LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { useUserStore } from "@/store/useUser";
-import { motion } from "framer-motion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export const UserSettings = () => {
   const { user } = useUserStore();
+  const isMobile = useIsMobile();
 
   return (
     <Popover>
@@ -18,15 +19,17 @@ export const UserSettings = () => {
           className="group rounded-xl px-3 py-1.5 flex items-center gap-2 bg-[#141413] hover:bg-[#2a2a2a]/90 backdrop-blur-md text-white text-sm transition-all duration-200 shadow-sm"
         >
             <Image
-              src={user?.imageUrl ?? ""}
+              src={user?.imageUrl ?? "/avatar-fallback.png"}
               alt="user-avatar"
               width={24}
               height={24}
               className="rounded-full w-6 h-6 border border-white/20"
             />
-          <span className="font-medium tracking-wide group-hover:text-gray-200">
-            {user?.name ?? "Log In"}
-          </span>
+          {!isMobile && (
+            <span className="font-medium tracking-wide group-hover:text-gray-200">
+              {user?.name ?? "Log In"}
+            </span>
+          )}
         </button>
       </PopoverTrigger>
 

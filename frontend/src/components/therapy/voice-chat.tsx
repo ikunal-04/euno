@@ -285,68 +285,19 @@ export const VoiceChat = () => {
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
       {/* MetaBalls background */}
       <MetaBalls
-        color="#ffffff"
+        color="#a8e3ff"
         cursorBallColor="#ffffff"
         cursorBallSize={2}
-        ballCount={15}
+        ballCount={20}
         animationSize={60}
         enableMouseInteraction={false}
         enableTransparency={true}
-        hoverSmoothness={0.05}
         clumpFactor={1}
-        speed={isPlaying ? 1.0 : 0.1}
+        speed={isPlaying ? 1.0 : 0.4}
       />
 
-      {/* Audio Waveform Visualization - Top Center
-      {(isRecording || isPlaying) && (
-        <div className="absolute top-32 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 animate-fadeIn">
-          {[...Array(20)].map((_, i) => (
-            <div
-              key={i}
-              className={`w-1 rounded-full transition-all ${
-                isRecording ? 'bg-emerald-400' : 'bg-violet-400'
-              }`}
-              style={{
-                height: '8px',
-                animation: `waveform ${0.8 + (i % 5) * 0.1}s ease-in-out infinite`,
-                animationDelay: `${i * 0.05}s`
-              }}
-            />
-          ))}
-        </div>
-      )} */}
-
-      {/* Status Card - Below Waveform
-      {(isRecording || isPlaying) && (
-        <div className="absolute top-48 left-1/2 -translate-x-1/2 animate-fadeIn">
-          <div className="px-6 py-3 bg-slate-900/80 backdrop-blur-xl rounded-full border border-slate-700/50 shadow-2xl">
-            <div className="flex items-center gap-3">
-              {isRecording && (
-                <>
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full" />
-                  </div>
-                  <span className="text-sm text-emerald-300 font-light tracking-wide">Listening</span>
-                </>
-              )}
-              {isPlaying && !isRecording && (
-                <>
-                  <div className="flex gap-0.5">
-                    <div className="w-1 h-3 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1 h-4 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '100ms' }} />
-                    <div className="w-1 h-3 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '200ms' }} />
-                  </div>
-                  <span className="text-sm text-violet-300 font-light tracking-wide">Agent Speaking</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )} */}
-
       {/* Centered Control Buttons */}
-      <div className="absolute bottom-24 flex items-center justify-center gap-8">
+      <div className="absolute bottom-12 flex items-center justify-center gap-8">
         {/* Mic Button with Ripple Effect */}
         <button
           onClick={isCallActive ? handleEndCall : handleStartCall}

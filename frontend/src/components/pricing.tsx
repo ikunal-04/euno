@@ -93,7 +93,7 @@ export default function PricingPage() {
               <div className="flex gap-2 items-center">
                 <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
                 {plan.highlight && (
-                  <span className="bg-indigo-500 text-xs mb-2 px-3 py-1 rounded-xl font-semibold">
+                  <span className="bg-[#a8e3ff] text-black text-xs mb-2 px-3 py-1 rounded-xl font-semibold">
                     Popular
                   </span>
                 )}
@@ -109,7 +109,7 @@ export default function PricingPage() {
               <ul className="space-y-3 mb-8">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2 text-gray-300">
-                    <Check className="text-indigo-400 w-5 h-5" />
+                    <Check className="text-[#a8e3ff] w-5 h-5" />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -117,7 +117,7 @@ export default function PricingPage() {
 
               <button
                 className={`w-full py-3 rounded-full font-medium transition-all duration-300 ${plan.highlight
-                    ? "bg-indigo-500 hover:bg-indigo-600"
+                    ? "bg-[#a8e3ff] text-black"
                     : "bg-[#2a2927] hover:bg-[#3a3937]"
                   }`}
                 onClick={() => createSubscription(plan.id, user?.name || undefined, user?.email || undefined)}
