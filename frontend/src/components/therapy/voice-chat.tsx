@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Mic, Volume2, VolumeX, Phone, PhoneOff, MicOff, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import MetaBalls from "../MetaBalls";
+import CardSwap, { Card } from "./flowingMenu";
 
 interface Message {
   id: string;
@@ -47,6 +47,7 @@ export const VoiceChat = () => {
 
         console.log("🗣️ Transcription:", data.text, "Final:", data.is_final);
 
+        // If transcription is final, add to messages
         if (data.is_final) {
           const userMessage: Message = {
             id: `user-${Date.now()}`,
@@ -59,7 +60,9 @@ export const VoiceChat = () => {
       }
 
       if (data.type === 'agent_response') {
+        // Handle text response
         if (typeof data.text === 'string' && data.text.trim().length > 0) {
+          // Only add to messages if it's the final response
           if (data.is_final) {
             const agentMessage: Message = {
               id: `agent-${Date.now()}`,
@@ -70,10 +73,12 @@ export const VoiceChat = () => {
             setMessages((prev) => [...prev, agentMessage]);
             setCurrentAgentText("");
           } else {
+            // Show streaming text
             setCurrentAgentText(data.text);
           }
         }
 
+        // Handle audio (both streaming and complete)
         if (data.audio_data && (data.status === 'streaming' || data.status === 'complete')) {
           try {
             console.log('🔊 Received audio chunk:', data.audio_mime_type);
@@ -81,12 +86,14 @@ export const VoiceChat = () => {
             const mime = (data.audio_mime_type || '').toLowerCase();
             const u8 = base64ToUint8Array(data.audio_data);
 
+            // Prefer WAV playback in browser per Deepgram guidance.
             if (mime.includes('audio/wav')) {
               const arr = new Uint8Array(u8.byteLength);
               arr.set(u8);
               const blob = new Blob([arr.buffer], { type: 'audio/wav' });
               const url = URL.createObjectURL(blob);
 
+              // Stop previous element
               if (audioPlaybackRef.current) {
                 try { audioPlaybackRef.current.pause(); } catch {}
                 try { URL.revokeObjectURL(audioPlaybackRef.current.src); } catch {}
@@ -108,6 +115,7 @@ export const VoiceChat = () => {
               };
               void audio.play();
             } else {
+              // Fallback: raw PCM via WebAudio
               const int16 = new Int16Array(u8.buffer, u8.byteOffset, u8.byteLength / 2);
               const f32 = new Float32Array(int16.length);
               for (let i = 0; i < int16.length; i++) f32[i] = int16[i] / 32768;
@@ -219,9 +227,13 @@ export const VoiceChat = () => {
     setIsCallActive(true);
     setIsRecording(true);
 
+    // Connect WebSocket
     connectWebSocket();
+
+    // Start audio capture
     await startAudioCapture();
 
+    // Add welcome message
     const welcomeMessage: Message = {
       id: `agent-welcome-${Date.now()}`,
       type: "agent",
@@ -238,17 +250,21 @@ export const VoiceChat = () => {
     setCurrentUserText("");
     setCurrentAgentText("");
 
+    // Clear audio queue and stop playing
     audioQueueRef.current = [];
     isPlayingRef.current = false;
 
+    // Close audio context
     if (audioCtxRef.current) {
       try { audioCtxRef.current.close(); } catch {}
       audioCtxRef.current = null;
       playTimeRef.current = 0;
     }
 
+    // Stop audio capture
     stopAudioCapture();
 
+    // Close WebSocket connection
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -295,6 +311,90 @@ export const VoiceChat = () => {
         clumpFactor={1}
         speed={isPlaying ? 1.0 : 0.4}
       />
+
+      {/* Audio Waveform Visualization - Top Center */}
+      {/* {(isRecording || isPlaying) && (
+        <div className="absolute top-32 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 animate-fadeIn">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className={`w-1 rounded-full transition-all ${
+                isRecording ? 'bg-emerald-400' : 'bg-violet-400'
+              }`}
+              style={{
+                height: '8px',
+                animation: `waveform ${0.8 + (i % 5) * 0.1}s ease-in-out infinite`,
+                animationDelay: `${i * 0.05}s`
+              }}
+            />
+          ))}
+        </div>
+      )} */}
+
+      {/* Status Card - Below Waveform */}
+      {/* {(isRecording || isPlaying) && (
+        <div className="absolute top-48 left-1/2 -translate-x-1/2 animate-fadeIn">
+          <div className="px-6 py-3 bg-slate-900/80 backdrop-blur-xl rounded-full border border-slate-700/50 shadow-2xl">
+            <div className="flex items-center gap-3">
+              {isRecording && (
+                <>
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                  </div>
+                  <span className="text-sm text-emerald-300 font-light tracking-wide">Listening</span>
+                </>
+              )}
+              {isPlaying && !isRecording && (
+                <>
+                  <div className="flex gap-0.5">
+                    <div className="w-1 h-3 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1 h-4 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '100ms' }} />
+                    <div className="w-1 h-3 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '200ms' }} />
+                  </div>
+                  <span className="text-sm text-violet-300 font-light tracking-wide">Agent Speaking</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )} */}
+
+      {/* CardSwap Component - Right Side */}
+      <div className="absolute left-[1500px] top-1/2 -translate-y-1/2 h-[200px] w-[100px]">
+        <CardSwap
+          cardDistance={50}
+          verticalDistance={50}
+          delay={5000}
+          pauseOnHover={false}
+        >
+        
+          <Card>
+            <div className="p-6 backdrop-blur-xl rounded-2xl border  shadow-2xl h-full">
+              <h3 className="text-xl font-light text-white mb-3">StoryTeller</h3>
+              <p className="text-sm text-white leading-relaxed">
+                Find your inner peace with calming meditation exercises and breathing techniques.
+              </p>
+            </div>
+          </Card>
+          <Card>
+            <div className="p-6  backdrop-blur-xl rounded-2xl border border-emerald-700/50 shadow-2xl h-full">
+              <h3 className="text-xl font-light text-white mb-3">Romantic</h3>
+              <p className="text-sm text-white leading-relaxed">
+                Track your mental wellness journey with daily mood reflections and insights.
+              </p>
+            </div>
+          </Card>
+          <Card>
+            <div className="p-6 backdrop-blur-xl rounded-2xl border border-emerald-700/50 shadow-2xl h-full">
+              <h3 className="text-xl font-light text-white mb-3">Sexy</h3>
+              <p className="text-sm text-white leading-relaxed">
+                Track your mental wellness journey with daily mood reflections and insights.
+              </p>
+            </div>
+          </Card>
+        </CardSwap>
+      </div>
 
       {/* Centered Control Buttons */}
       <div className="absolute bottom-12 flex items-center justify-center gap-8">
@@ -348,6 +448,60 @@ export const VoiceChat = () => {
           </div>
         </button>
       </div>
+
+      <style jsx global>{`
+        @keyframes ripple {
+          0% {
+            transform: scale(1);
+            opacity: 0.6;
+          }
+          100% {
+            transform: scale(2);
+            opacity: 0;
+          }
+        }
+        
+        @keyframes waveform {
+          0%, 100% {
+            height: 8px;
+          }
+          50% {
+            height: 40px;
+          }
+        }
+        
+        @keyframes audioBar {
+          0%, 100% {
+            height: 0.75rem;
+          }
+          50% {
+            height: 1.25rem;
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        
+        .animate-ripple {
+          animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        
+        .animate-audioBar {
+          animation: audioBar 0.6s ease-in-out infinite;
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
