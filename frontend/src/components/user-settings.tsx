@@ -14,12 +14,9 @@ export const UserSettings = () => {
     <Popover>
       {/* Trigger */}
       <PopoverTrigger asChild>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.97 }}
-          className="group rounded-full px-3 py-1.5 flex items-center gap-2 bg-[#141413] hover:bg-[#2a2a2a]/90 backdrop-blur-md  text-white text-sm transition-all duration-200 shadow-sm"
+        <button
+          className="group rounded-xl px-3 py-1.5 flex items-center gap-2 bg-[#141413] hover:bg-[#2a2a2a]/90 backdrop-blur-md text-white text-sm transition-all duration-200 shadow-sm"
         >
-          
             <Image
               src={user?.imageUrl ?? ""}
               alt="user-avatar"
@@ -27,11 +24,10 @@ export const UserSettings = () => {
               height={24}
               className="rounded-full w-6 h-6 border border-white/20"
             />
-          
           <span className="font-medium tracking-wide group-hover:text-gray-200">
-            {user?.name ?? "User"}
+            {user?.name ?? "Log In"}
           </span>
-        </motion.button>
+        </button>
       </PopoverTrigger>
 
       {/* Content */}

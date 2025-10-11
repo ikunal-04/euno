@@ -34,7 +34,7 @@ export const VoiceChat = () => {
   const playTimeRef = useRef(0);
 
   const connectWebSocket = () => {
-    const ws = new WebSocket('wss://euno-766343988995.europe-west1.run.app/ws/audio');
+    const ws = new WebSocket('wss://api.euno.live/ws/audio');
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -397,60 +397,6 @@ export const VoiceChat = () => {
           </div>
         </button>
       </div>
-
-      <style jsx global>{`
-        @keyframes ripple {
-          0% {
-            transform: scale(1);
-            opacity: 0.6;
-          }
-          100% {
-            transform: scale(2);
-            opacity: 0;
-          }
-        }
-        
-        @keyframes waveform {
-          0%, 100% {
-            height: 8px;
-          }
-          50% {
-            height: 40px;
-          }
-        }
-        
-        @keyframes audioBar {
-          0%, 100% {
-            height: 0.75rem;
-          }
-          50% {
-            height: 1.25rem;
-          }
-        }
-        
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translate(-50%, -10px);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-          }
-        }
-        
-        .animate-ripple {
-          animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
-        }
-        
-        .animate-audioBar {
-          animation: audioBar 0.6s ease-in-out infinite;
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out;
-        }
-      `}</style>
     </div>
   );
 };

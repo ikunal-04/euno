@@ -22,11 +22,9 @@ const NavBarMain = () => {
           {user ? (
             <UserSettings />
           ) : (
-            <motion.button
+            <button
               onClick={() => signIn("google")}
               className="px-6 py-2.5 rounded-2xl bg-gray-900/95 hover:bg-gray-800 text-white text-sm font-normal transition-all duration-300 shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/25"
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
             >
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
@@ -34,7 +32,7 @@ const NavBarMain = () => {
                 </svg>
                 sign in
               </div>
-            </motion.button>
+            </button>
           )}
       </nav>
     </div>
