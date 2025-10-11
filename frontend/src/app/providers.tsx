@@ -2,7 +2,8 @@
 
 import { ReactNode, useEffect } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
-import { useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/useUser";
+import { Users } from "@/types/users";
 
 function SyncUserWithStore() {
   const { data: session, status } = useSession();
@@ -22,7 +23,7 @@ function SyncUserWithStore() {
             const data = await res.json();
             setUser(data.user);
           } else {
-            setUser(session.user);
+            setUser(session.user as Users);
           }
         } else {
           clearUser();
@@ -36,7 +37,7 @@ function SyncUserWithStore() {
     };
 
     fetchUser();
-  }, [session, status, setUser, clearUser, setLoading]);
+  }, [ status, setUser, clearUser, setLoading]);
 
   return null;
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Volume2, VolumeX, Phone, PhoneOff, MicOff } from "lucide-react";
+import { Mic, Volume2, VolumeX, Phone, PhoneOff, MicOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import MetaBalls from "../MetaBalls";
 
 interface Message {
   id: string;
@@ -33,7 +33,6 @@ export const VoiceChat = () => {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const playTimeRef = useRef(0);
 
-
   const connectWebSocket = () => {
     const ws = new WebSocket('wss://euno-766343988995.europe-west1.run.app/ws/audio');
 
@@ -46,7 +45,8 @@ export const VoiceChat = () => {
       if (data.type === "transcription") {
         setCurrentUserText(data.text);
 
-        // If transcription is final, add to messages
+        console.log("🗣️ Transcription:", data.text, "Final:", data.is_final);
+
         if (data.is_final) {
           const userMessage: Message = {
             id: `user-${Date.now()}`,
@@ -59,9 +59,7 @@ export const VoiceChat = () => {
       }
 
       if (data.type === 'agent_response') {
-        // Handle text response
         if (typeof data.text === 'string' && data.text.trim().length > 0) {
-          // Only add to messages if it's the final response
           if (data.is_final) {
             const agentMessage: Message = {
               id: `agent-${Date.now()}`,
@@ -72,12 +70,10 @@ export const VoiceChat = () => {
             setMessages((prev) => [...prev, agentMessage]);
             setCurrentAgentText("");
           } else {
-            // Show streaming text
             setCurrentAgentText(data.text);
           }
         }
 
-        // Handle audio (both streaming and complete)
         if (data.audio_data && (data.status === 'streaming' || data.status === 'complete')) {
           try {
             console.log('🔊 Received audio chunk:', data.audio_mime_type);
@@ -85,14 +81,12 @@ export const VoiceChat = () => {
             const mime = (data.audio_mime_type || '').toLowerCase();
             const u8 = base64ToUint8Array(data.audio_data);
 
-            // Prefer WAV playback in browser per Deepgram guidance.
             if (mime.includes('audio/wav')) {
               const arr = new Uint8Array(u8.byteLength);
               arr.set(u8);
               const blob = new Blob([arr.buffer], { type: 'audio/wav' });
               const url = URL.createObjectURL(blob);
 
-              // Stop previous element
               if (audioPlaybackRef.current) {
                 try { audioPlaybackRef.current.pause(); } catch {}
                 try { URL.revokeObjectURL(audioPlaybackRef.current.src); } catch {}
@@ -114,7 +108,6 @@ export const VoiceChat = () => {
               };
               void audio.play();
             } else {
-              // Fallback: raw PCM via WebAudio
               const int16 = new Int16Array(u8.buffer, u8.byteOffset, u8.byteLength / 2);
               const f32 = new Float32Array(int16.length);
               for (let i = 0; i < int16.length; i++) f32[i] = int16[i] / 32768;
@@ -226,13 +219,9 @@ export const VoiceChat = () => {
     setIsCallActive(true);
     setIsRecording(true);
 
-    // Connect WebSocket
     connectWebSocket();
-
-    // Start audio capture
     await startAudioCapture();
 
-    // Add welcome message
     const welcomeMessage: Message = {
       id: `agent-welcome-${Date.now()}`,
       type: "agent",
@@ -249,21 +238,17 @@ export const VoiceChat = () => {
     setCurrentUserText("");
     setCurrentAgentText("");
 
-    // Clear audio queue and stop playing
     audioQueueRef.current = [];
     isPlayingRef.current = false;
 
-    // Close audio context
     if (audioCtxRef.current) {
       try { audioCtxRef.current.close(); } catch {}
       audioCtxRef.current = null;
       playTimeRef.current = 0;
     }
 
-    // Stop audio capture
     stopAudioCapture();
 
-    // Close WebSocket connection
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -296,152 +281,174 @@ export const VoiceChat = () => {
     return bytes;
   }
 
-
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
-      {/* Gradient pulse background */}
-      <div
-        className={`absolute inset-0 transition-all duration-1000 ${
-          isRecording || isPlaying ? "opacity-100 animate-pulse-glow" : "opacity-0"
-        }`}
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(76,154,255,0.15), rgba(20,20,19,0.9))",
-        }}
+      {/* MetaBalls background */}
+      <MetaBalls
+        color="#ffffff"
+        cursorBallColor="#ffffff"
+        cursorBallSize={2}
+        ballCount={15}
+        animationSize={60}
+        enableMouseInteraction={false}
+        enableTransparency={true}
+        hoverSmoothness={0.05}
+        clumpFactor={1}
+        speed={isPlaying ? 1.0 : 0.1}
       />
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
-          >
+      {/* Audio Waveform Visualization - Top Center
+      {(isRecording || isPlaying) && (
+        <div className="absolute top-32 left-1/2 -translate-x-1/2 flex items-center justify-center gap-1 animate-fadeIn">
+          {[...Array(20)].map((_, i) => (
             <div
-              className={`max-w-[80%] p-3 rounded-lg ${message.type === "user"
-                  ? "bg-blue-500 text-white"
-                  : "bg-muted text-foreground"
-                }`}
-            >
-              <p className="text-sm">{message.text}</p>
-              <span className="text-xs opacity-70 mt-1 block">
-                {message.timestamp.toLocaleTimeString()}
-              </span>
-            </div>
-          </div>
-        ))}
-
-        {/* Current partial messages */}
-        {currentUserText && (
-          <div className="flex justify-end">
-            <div className="max-w-[80%] p-3 rounded-lg bg-blue-400 text-white opacity-70">
-              <p className="text-sm">{currentUserText}</p>
-              <span className="text-xs opacity-70">Speaking...</span>
-            </div>
-          </div>
-        )}
-
-        {currentAgentText && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] p-3 rounded-lg bg-muted/70 text-foreground">
-              <p className="text-sm">{currentAgentText}</p>
-              <span className="text-xs opacity-70">Thinking...</span>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Controls */}
-      <div className="p-4 border-t bg-background/50 backdrop-blur">
-        <div className="flex items-center justify-center space-x-4">
-          {/* Volume Control */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleMute}
-              disabled={!isCallActive}
-            >
-              {isMuted ? (
-                <VolumeX className="h-4 w-4" />
-              ) : (
-                <Volume2 className="h-4 w-4" />
-              )}
-            </Button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-20"
-              disabled={!isCallActive}
-            />
-          </div>
-
-          {/* Main Call Button */}
-          <Button
-            onClick={isCallActive ? handleEndCall : handleStartCall}
-            size="lg"
-            variant={isCallActive ? "destructive" : "default"}
-            className={`rounded-full w-16 h-16 ${isCallActive
-                ? "bg-red-500 hover:bg-red-600"
-                : "bg-green-500 hover:bg-green-600"
+              key={i}
+              className={`w-1 rounded-full transition-all ${
+                isRecording ? 'bg-emerald-400' : 'bg-violet-400'
               }`}
-          >
-            {isCallActive ? (
-              <PhoneOff className="h-6 w-6" />
-            ) : (
-              <Phone className="h-6 w-6" />
-            )}
-          </Button>
+              style={{
+                height: '8px',
+                animation: `waveform ${0.8 + (i % 5) * 0.1}s ease-in-out infinite`,
+                animationDelay: `${i * 0.05}s`
+              }}
+            />
+          ))}
+        </div>
+      )} */}
 
-          {/* Mic Indicator */}
-          <div className="flex items-center space-x-2">
-            <div
-              className={`p-2 rounded-full ${isRecording ? "bg-red-100" : "bg-muted"}`}
-            >
-              {isRecording ? (
-                <Mic className="h-4 w-4 text-red-500" />
-              ) : (
-                <MicOff className="h-4 w-4 text-muted-foreground" />
+      {/* Status Card - Below Waveform
+      {(isRecording || isPlaying) && (
+        <div className="absolute top-48 left-1/2 -translate-x-1/2 animate-fadeIn">
+          <div className="px-6 py-3 bg-slate-900/80 backdrop-blur-xl rounded-full border border-slate-700/50 shadow-2xl">
+            <div className="flex items-center gap-3">
+              {isRecording && (
+                <>
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                  </div>
+                  <span className="text-sm text-emerald-300 font-light tracking-wide">Listening</span>
+                </>
+              )}
+              {isPlaying && !isRecording && (
+                <>
+                  <div className="flex gap-0.5">
+                    <div className="w-1 h-3 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1 h-4 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '100ms' }} />
+                    <div className="w-1 h-3 bg-violet-400 rounded-full animate-audioBar" style={{ animationDelay: '200ms' }} />
+                  </div>
+                  <span className="text-sm text-violet-300 font-light tracking-wide">Agent Speaking</span>
+                </>
               )}
             </div>
-            <span className="text-sm text-muted-foreground">
-              {isRecording ? "Listening..." : "Not recording"}
+          </div>
+        </div>
+      )} */}
+
+      {/* Centered Control Buttons */}
+      <div className="absolute bottom-24 flex items-center justify-center gap-8">
+        {/* Mic Button with Ripple Effect */}
+        <button
+          onClick={isCallActive ? handleEndCall : handleStartCall}
+          className="relative group"
+        >
+          {/* Ripple rings when recording */}
+          {isRecording && (
+            <>
+              <div className="absolute inset-0 rounded-full bg-emerald-500/30 animate-ripple" />
+              <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ripple" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ripple" style={{ animationDelay: '1s' }} />
+            </>
+          )}
+          
+          {/* Main button */}
+          <div className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+            isRecording
+              ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
+              : "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-slate-900/50 hover:scale-105"
+          }`}>
+            {isRecording ? (
+              <Mic className="h-6 w-6 text-white" strokeWidth={2.5} />
+            ) : (
+              <Mic className="h-6 w-6 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
+            )}
+          </div>
+
+          {/* Button label */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs text-slate-400 font-light">
+              {isRecording ? 'Recording' : 'Start'}
             </span>
           </div>
-        </div>
+        </button>
 
-        {/* Status */}
-        <div className="text-center mt-3">
-          <span className="text-xs text-muted-foreground">
-            {!isCallActive && "Ready to start"}
-            {isCallActive && "Session active"}
-            {isPlaying && " - Agent speaking"}
-          </span>
-        </div>
+        {/* End Call Button */}
+        <button
+          onClick={handleEndCall}
+          className="relative group"
+        >
+          <div className="relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-500 hover:to-red-600 shadow-2xl shadow-slate-900/50 hover:shadow-red-500/50 hover:scale-105">
+            <X className="h-7 w-7 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
+          </div>
+
+          {/* Button label */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs text-slate-400 font-light">End Call</span>
+          </div>
+        </button>
       </div>
 
-      {/* Pulse animation */}
       <style jsx global>{`
-        @keyframes pulse-glow {
+        @keyframes ripple {
           0% {
-            opacity: 0.5;
             transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.05);
+            opacity: 0.6;
           }
           100% {
-            opacity: 0.5;
-            transform: scale(1);
+            transform: scale(2);
+            opacity: 0;
           }
         }
-        .animate-pulse-glow {
-          animation: pulse-glow 3s ease-in-out infinite;
+        
+        @keyframes waveform {
+          0%, 100% {
+            height: 8px;
+          }
+          50% {
+            height: 40px;
+          }
+        }
+        
+        @keyframes audioBar {
+          0%, 100% {
+            height: 0.75rem;
+          }
+          50% {
+            height: 1.25rem;
+          }
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -10px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+        
+        .animate-ripple {
+          animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        
+        .animate-audioBar {
+          animation: audioBar 0.6s ease-in-out infinite;
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.4s ease-out;
         }
       `}</style>
     </div>

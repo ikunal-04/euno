@@ -6,7 +6,7 @@ import { Check, ArrowLeft } from "lucide-react";
 import { PLAN_IDS } from "@/config/const";
 import Script from "next/script";
 import { createSubscription } from "@/lib/razorpay/client";
-import { useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/useUser";
 import { useRouter } from "next/navigation";
 
 export default function PricingPage() {

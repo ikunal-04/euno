@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Session } from "next-auth";
+import { Users } from "@/types/users";
 
 interface UserState {
-  user: Session["user"] | null;
+  user: Users | null;
   loading: boolean;
-  setUser: (user: Session["user"] | null) => void;
+  setUser: (user: Users | null) => void;
   clearUser: () => void;
   setLoading: (loading: boolean) => void;
 }
