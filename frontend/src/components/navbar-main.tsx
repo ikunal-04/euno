@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import React, { useState, useRef } from 'react'
-import { signIn, signOut } from 'next-auth/react'
+import React from 'react'
+import { signIn } from 'next-auth/react'
 import PricingButton from "@/components/pricingButton"
 import { UserSettings } from './user-settings'
 import { useUserStore } from '@/store/useUser'
@@ -8,8 +8,6 @@ import Logo from "@/components/logo"
 
 const NavBarMain = () => {
 
-    const [open, setOpen] = useState(false)
-    const dropdownRef = useRef<HTMLDivElement>(null)
     const user = useUserStore((state) => state.user);
 
   return (

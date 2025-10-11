@@ -17,7 +17,7 @@ export const UserSettings = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
-          className="group rounded-full px-3 py-1.5 flex items-center gap-2 bg-[#1b1b1b]/70 hover:bg-[#2a2a2a]/90 backdrop-blur-md border border-white/10 text-white text-sm transition-all duration-200 shadow-sm"
+          className="group rounded-full px-3 py-1.5 flex items-center gap-2 bg-[#141413] hover:bg-[#2a2a2a]/90 backdrop-blur-md  text-white text-sm transition-all duration-200 shadow-sm"
         >
           
             <Image
