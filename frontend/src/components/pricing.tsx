@@ -116,13 +116,29 @@ export default function PricingPage() {
               </ul>
 
               <button
-                className={`w-full py-3 rounded-full font-medium transition-all duration-300 ${plan.highlight
-                    ? "bg-[#a8e3ff] text-black"
+                className={`w-full py-3 rounded-full font-medium transition-all duration-300 ${
+                  plan.id === PLAN_IDS.Free 
+                    ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                    : plan.id === PLAN_IDS.Pro && user?.plans === "PRO"
+                    ? "bg-green-600 text-white cursor-not-allowed"
+                    : plan.highlight
+                    ? "bg-[#a8e3ff] text-black hover:bg-[#9dd3ef]"
                     : "bg-[#2a2927] hover:bg-[#3a3937]"
-                  }`}
-                onClick={() => createSubscription(plan.id, user?.name || undefined, user?.email || undefined)}
+                }`}
+                onClick={() => {
+                  if (plan.id === PLAN_IDS.Free || (plan.id === PLAN_IDS.Pro && user?.plans === "PRO")) {
+                    return; // No action for Free plan or if user already has Pro
+                  }
+                  createSubscription(plan.id, user?.name || undefined, user?.email || undefined);
+                }}
+                disabled={plan.id === PLAN_IDS.Free || (plan.id === PLAN_IDS.Pro && user?.plans === "PRO")}
               >
-                {plan.button}
+                {plan.id === PLAN_IDS.Free 
+                  ? "Current Plan" 
+                  : plan.id === PLAN_IDS.Pro && user?.plans === "PRO"
+                  ? "Current Plan"
+                  : plan.button
+                }
               </button>
             </motion.div>
           ))}

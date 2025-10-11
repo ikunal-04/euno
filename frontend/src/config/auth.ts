@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/db/server";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 import type {
     GetServerSidePropsContext,
     NextApiRequest,
@@ -13,6 +14,30 @@ export const authOptions: NextAuthOptions = {
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
+        CredentialsProvider({
+            name: "credentials",
+            credentials: {
+                email: { label: "Email", type: "email" },
+                password: { label: "Password", type: "password" }
+            },
+            async authorize(credentials) {
+                if (!credentials?.email || !credentials?.password) {
+                    return null;
+                }
+
+                // Test user credentials
+                if (credentials.email === "test@example.com" && credentials.password === "test123") {
+                    return {
+                        id: "test-user-123",
+                        email: "test@example.com",
+                        name: "Test User",
+                        image: null,
+                    };
+                }
+
+                return null;
+            }
         })
     ],
     callbacks: {

@@ -43,7 +43,7 @@ export const UserSettings = () => {
         <div className="flex items-center gap-3 pb-3 border-b border-white/10">
    
             <Image
-              src={user?.imageUrl ?? ""}
+              src={user?.imageUrl ?? "/avatar-fallback.png"}
               alt="user-avatar"
               width={40}
               height={40}

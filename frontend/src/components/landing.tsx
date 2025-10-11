@@ -1,23 +1,53 @@
 "use client"
 
-import React from "react";
+import React, { useState } from "react";
 import NavLanding from "@/components/nav-landing";
 import { signIn } from "next-auth/react";
 import { Cormorant_Garamond } from "next/font/google";
 import { DM_Sans } from "next/font/google";
-// Elegant serif font for the main heading
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { Separator } from "./ui/separator";
+
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
 
-// Sleek and modern sans-serif for body and UI elements
 const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
 });
 
 export default function EunoLandingPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleTestLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Test credentials
+    const testEmail = "test@example.com";
+    const testPassword = "test123";
+    
+    if (email === testEmail && password === testPassword) {
+      // Simulate successful login
+      await signIn("credentials", {
+        email: testEmail,
+        password: testPassword,
+        redirect: true,
+        callbackUrl: "/"
+      });
+    } else {
+      alert("Invalid credentials. Use: test@example.com / test123");
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#121211] text-[#f8f8f6] flex flex-col overflow-hidden">
       <NavLanding />
@@ -42,8 +72,6 @@ export default function EunoLandingPage() {
            Euno is your private companion for reflection, conversation, and gentle guidance.
           </p>
 
-          {/* Sign In Card */}
-          {/* <div className="bg-[#1a1a19] border border-[#2a2928] rounded-2xl p-8 shadow-xl w-[340px] backdrop-blur-sm"> */}
             <button
               onClick={() => signIn("google")}
               className={`${dmSans.className} flex items-center justify-center gap-3 px-6 py-3  p-8 shadow-xl w-[340px] bg-[#121211] border border-[#2a2928] rounded-xl text-lg font-medium text-[#f5f4f0] 
@@ -69,8 +97,34 @@ export default function EunoLandingPage() {
               </svg>
               <span>Continue with Google</span>
             </button>
+
+            <Separator className="bg-white/30"/>
+
+            <form onSubmit={handleTestLogin} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 w-full">
+                <Label>Email</Label>
+                <Input 
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="test@example.com"
+                />
+              </div>
+              <div className="flex flex-col gap-2 w-full">
+                <Label>Password</Label>
+                <Input 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="test123"
+                />
+              </div>
+
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Login"}
+              </Button>
+            </form>
           </div>
-        {/* </div> */}
 
         {/* ===== Right Section - Video ===== */}
         <div className="flex-1 flex justify-center lg:justify-end w-full relative">

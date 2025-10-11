@@ -21,7 +21,6 @@ export default function Page() {
   if (user) {
     return (
       <div className="min-h-screen flex flex-col">
-   
         <NavBarMain />
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
           <VoiceChat />
