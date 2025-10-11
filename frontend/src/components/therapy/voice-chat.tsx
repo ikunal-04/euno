@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useVoiceChatStore } from "@/store/voice-chat";
 import { useUserStore } from "@/store/user";
 
-interface Message {
-  id: string;
-  type: "user" | "agent";
-  text: string;
-  timestamp: Date;
-}
-
 export const VoiceChat = () => {
   const isCallActive = useVoiceChatStore((s) => s.isCallActive);
   const setIsCallActive = useVoiceChatStore((s) => s.setIsCallActive);
