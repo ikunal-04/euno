@@ -58,23 +58,22 @@ export default function PricingPage() {
       {user && (
 
         <motion.button
-        initial={{ opacity: 0, x: -20 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.6 }}
-        onClick={() => router.back()}
-        className="absolute top-4 left-4 flex items-center gap-2 text-gray-400 hover:text-white bg-[#141413] hover:bg-[#2a2a2a]/90 rounded-full px-3 py-1.5 transition-colors duration-200 group sm:top-6 sm:left-6"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          onClick={() => router.back()}
+          className="absolute top-4 left-4 flex items-center gap-2 text-gray-400 hover:text-white bg-[#141413] hover:bg-[#2a2a2a]/90 rounded-full px-3 py-1.5 transition-colors duration-200 group sm:top-6 sm:left-6"
         >
-        <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform duration-200" />
-        <span className="text-xs sm:text-sm md:text-base">Back</span>
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform duration-200" />
+          <span className="text-xs sm:text-sm md:text-base">Back</span>
         </motion.button>
 
       )}
 
       {/* Centered content */}
       <div
-        className={`flex flex-col items-center w-full max-w-6xl ${
-          !user ? "pt-20 sm:pt-24" : "pt-12 sm:pt-16 "
-        }`}
+        className={`flex flex-col items-center w-full max-w-6xl ${!user ? "pt-20 sm:pt-24" : "pt-12 sm:pt-16 "
+          }`}
       >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -132,15 +131,14 @@ export default function PricingPage() {
               </div>
 
               <button
-                className={`w-full py-2 sm:py-2.5 md:py-3 rounded-full font-medium transition-all duration-300 text-[11px] sm:text-xs md:text-sm ${
-                  plan.id === PLAN_IDS.Free
+                className={`w-full py-2 sm:py-2.5 md:py-3 rounded-full font-medium transition-all duration-300 text-[11px] sm:text-xs md:text-sm ${plan.id === PLAN_IDS.Free
                     ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                     : plan.id === PLAN_IDS.Pro && user?.plans === "PRO"
-                    ? "bg-[#a8e3ff]/10 text-white cursor-not-allowed"
-                    : plan.highlight
-                    ? "bg-[#a8e3ff] text-black hover:bg-[#9dd3ef]"
-                    : "bg-[#2a2927] hover:bg-[#3a3937]"
-                }`}
+                      ? "bg-[#a8e3ff]/10 text-white cursor-not-allowed"
+                      : plan.highlight
+                        ? "bg-[#a8e3ff] text-black hover:bg-[#9dd3ef]"
+                        : "bg-[#2a2927] hover:bg-[#3a3937]"
+                  }`}
                 onClick={() => {
                   if (plan.id === PLAN_IDS.Free || (plan.id === PLAN_IDS.Pro && user?.plans === "PRO")) return;
                   createSubscription(plan.id, user?.name || undefined, user?.email || undefined);
@@ -150,15 +148,21 @@ export default function PricingPage() {
                 {plan.id === PLAN_IDS.Free
                   ? "Current Plan"
                   : plan.id === PLAN_IDS.Pro && user?.plans === "PRO"
-                  ? "Current Plan"
-                  : plan.button}
+                    ? "Current Plan"
+                    : plan.button}
               </button>
             </motion.div>
           ))}
         </div>
 
         <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 mt-4 sm:mt-6 md:mt-8 text-center max-w-md px-4">
-          Cancel anytime. No hidden fees. Secure payments powered by Razorpay.
+          For plan cancellation requests, please email us at{" "}
+          <a
+            href="mailto:euno.contact@gmail.com"
+            className="text-[#a8e3ff] hover:underline"
+          >
+            euno.contact@gmail.com
+          </a>.
         </p>
       </div>
     </div>
