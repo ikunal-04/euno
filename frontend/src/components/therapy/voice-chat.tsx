@@ -439,7 +439,7 @@ export const VoiceChat = () => {
   ];
 
   return (
-    <div className="flex flex-col  h-[95vh] w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
+    <div className="flex flex-col h-[95vh] w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
       <div className="absolute inset-0 w-full h-full">
         <MetaBalls
         color="#a8e3ff"
@@ -454,7 +454,7 @@ export const VoiceChat = () => {
         />
       </div>
 
-      <div className="absolute bottom-10 sm:bottom-12 md:bottom-16 lg:bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 sm:gap-6 md:gap-8 px-4">
+      <div className=" absolute bottom-10 sm:bottom-12 md:bottom-16 lg:bottom-8 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 sm:gap-6 md:gap-8 px-4">
         <button
           onClick={handleStartCall}
           className="relative group"

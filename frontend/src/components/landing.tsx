@@ -63,7 +63,7 @@ export default function EunoLandingPage() {
           "
         >
           <h1
-            className={` text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] leading-[1.1] font-delius tracking-tight`}
+            className={`text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] leading-[1.1] font-delius tracking-tight`}
           >
             <span className="block text-[#f5f4f0]/90">Where thoughts</span>
             <span className="block text-[#f5f4f0] font-semibold">
@@ -137,7 +137,7 @@ export default function EunoLandingPage() {
 
         {/* ===== Right Section - Video (Hidden on small screens) ===== */}
         <div className="hidden pt-32 lg:flex flex-1 justify-center lg:justify-end w-full h-full relative">
-          <div className="relative w-full h-[80%] max-w-[720px] overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+          <div className="relative w-full h-[90%] max-w-[720px] overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
             <video
               className="absolute inset-0 w-full h-full object-cover object-center rounded-3xl"
               src="/video.mp4"

@@ -73,7 +73,7 @@ export default function PricingPage() {
       {/* Centered content */}
       <div
         className={`flex flex-col items-center w-full max-w-6xl ${
-          !user ? "pt-20 sm:pt-24" : "pt-16 sm:pt-16"
+          !user ? "pt-20 sm:pt-24" : "pt-12 sm:pt-16 "
         }`}
       >
         <motion.div
