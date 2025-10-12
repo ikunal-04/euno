@@ -4,6 +4,7 @@ import { ReactNode, useEffect } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
 import { useUserStore } from "@/store/useUser";
 import { Users } from "@/types/users";
+import { Toaster } from "sonner";
 
 function SyncUserWithStore() {
   const { data: session, status } = useSession();
@@ -47,6 +48,13 @@ export const Providers = ({ children }: { children: ReactNode }) => {
     <SessionProvider>
       <SyncUserWithStore />
       {children}
+      <Toaster 
+        position="top-right"
+        richColors
+        closeButton
+        expand={true}
+        duration={4000}
+      />
     </SessionProvider>
   );
 };
