@@ -4,7 +4,7 @@ import React from "react";
 import NavLanding from "@/components/nav-landing";
 import { motion } from "framer-motion";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Handshake, Briefcase, MessageCircle } from "lucide-react";
+import { Mail, Handshake } from "lucide-react";
 import { MapPin, Globe, Twitter } from "lucide-react"
 
 const ContactPage = () => {

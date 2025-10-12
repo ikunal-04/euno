@@ -8,6 +8,7 @@ import Script from "next/script";
 import { createSubscription } from "@/lib/razorpay/client";
 import { useUserStore } from "@/store/useUser";
 import { useRouter } from "next/navigation";
+import NavLanding from "./nav-landing";
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
@@ -51,25 +52,35 @@ export default function PricingPage() {
     <div className="min-h-screen bg-[#141413] text-white flex flex-col items-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 font-delius relative">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
+      {!user && <NavLanding />}
+
       {/* Back button */}
-      <motion.button
+      {user && (
+
+        <motion.button
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
         onClick={() => router.back()}
         className="absolute top-4 left-4 flex items-center gap-2 text-gray-400 hover:text-white bg-[#141413] hover:bg-[#2a2a2a]/90 rounded-full px-3 py-1.5 transition-colors duration-200 group sm:top-6 sm:left-6"
-      >
+        >
         <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform duration-200" />
         <span className="text-xs sm:text-sm md:text-base">Back</span>
-      </motion.button>
+        </motion.button>
+
+      )}
 
       {/* Centered content */}
-      <div className="flex flex-col items-center w-full max-w-6xl pt-10 sm:pt-12">
+      <div
+        className={`flex flex-col items-center w-full max-w-6xl ${
+          !user ? "pt-20 sm:pt-24" : "pt-16 sm:pt-16"
+        }`}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-8 sm:mb-12 md:mb-16 lg:mb-20 px-2 sm:px-0"
+          className="text-center  mb-8 sm:mb-12 md:mb-16 lg:mb-20 px-2 sm:px-0"
         >
           <h1 className="font-light text-2xl sm:text-4xl md:text-5xl lg:text-6xl bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent pb-2">
             Upgrade Your Plan
@@ -78,6 +89,7 @@ export default function PricingPage() {
             Whether you just want to talk or need a true companion, we've got you covered.
           </p>
         </motion.div>
+
 
         {/* Plans grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 w-full max-w-4xl">

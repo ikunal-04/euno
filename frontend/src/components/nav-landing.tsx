@@ -109,21 +109,29 @@ const NavLanding = () => {
               sm:hidden
             "
           >
-            {["About", "Pricing", "Contact"].map((item) => (
+            {[
+              { label: "About", route: "/about" },
+              { label: "Pricing", route: "/price" },
+              { label: "Contact", route: "/contact" },
+            ].map((item) => (
               <button
-                key={item}
-                onClick={() => setMenuOpen(false)}
+                key={item.label}
+                onClick={() => {
+                  setMenuOpen(false); // close menu
+                  router.push(item.route); // navigate
+                }}
                 className="
                   text-[#faf9f5]/90 hover:text-white 
                   transition-colors text-sm font-light
                 "
               >
-                {item}
+                {item.label}
               </button>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };
