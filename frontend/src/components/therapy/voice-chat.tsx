@@ -117,8 +117,8 @@ export const VoiceChat = () => {
 
   const connectWebSocket = () => {
     const wsUrl = userId 
-      ? `ws://localhost:8000/ws/audio?user_id=${encodeURIComponent(userId)}`
-      : 'ws://localhost:8000/ws/audio';
+      ? `wss://api.euno.live/ws/audio?user_id=${encodeURIComponent(userId)}`
+      : 'wss://api.euno.live/ws/audio';
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
