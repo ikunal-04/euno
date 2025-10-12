@@ -1,10 +1,10 @@
 import { Metadata } from 'next';
 
-const TITLE = 'Euno — Your AI Companion for Life\'s Moments';
+const TITLE = 'Euno - Your AI Companion for Life\'s Moments';
 const DESCRIPTION =
   'Euno is your always-available AI companion that adapts to be the friend, parent, teacher, or confidant you need. Share your thoughts, relieve stress, combat loneliness, and talk through life\'s challenges with an AI that truly listens and understands.';
 
-const PREVIEW_IMAGE_URL = 'https://i.postimg.cc/3JjFbSpy/og-1.png'; // Replace with your actual preview image URL
+const PREVIEW_IMAGE_URL = '/og-image.png';
 const ALT_TITLE = 'Euno - Your Personal AI Companion & Emotional Support';
 const BASE_URL = 'https://euno.live';
 
