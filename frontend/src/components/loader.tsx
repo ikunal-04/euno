@@ -1,16 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#141413] flex flex-col items-center justify-center">
-      {/* Central loader */}
+      {/* Logo as loader */}
       <motion.div
-        className="w-16 h-16 rounded-full border-4 border-t-gray-300 border-b-gray-300 border-l-white border-r-white"
+        className="w-24 h-24"
         animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-      />
+        transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+      >
+        <Image src="/logo.svg" alt="Euno Logo" width={96} height={96} />
+      </motion.div>
 
       {/* Three loading dots */}
       <div className="flex space-x-2 mt-6">

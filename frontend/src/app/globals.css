@@ -1,3 +1,6 @@
+/* === Import Fonts === */
+@import url('https://fonts.googleapis.com/css2?family=Delius&family=Inter:wght@300;400;500;600&display=swap');
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -6,8 +9,9 @@
 html,
 body {
   background-color: #141413;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Delius', cursive;
 }
+
 
 @keyframes ripple {
   0% {
