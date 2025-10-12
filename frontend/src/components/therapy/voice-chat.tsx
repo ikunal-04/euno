@@ -3,18 +3,19 @@
 import { useState, useRef, useEffect } from "react";
 import { Mic, MicOff, X } from "lucide-react";
 import MetaBalls from "../MetaBalls";
-import { 
-  Smile, 
-  Frown, 
-  HeartPulse, 
+import {
+  Smile,
+  Frown,
+  HeartPulse,
   Angry as AngryIcon,
-  Feather, 
-  Sparkles 
+  Feather,
+  Sparkles
 } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useVoiceChatStore } from "@/store/voice-chat";
 import { useUserStore } from "@/store/useUser";
 import { generateSummary } from "@/lib/summary/server";
+import { checkMessageLimit, incrementMessageCount, MessageLimitInfo } from "@/lib/message-limits/server";
+import { toast } from "sonner";
 
 export const VoiceChat = () => {
   const isCallActive = useVoiceChatStore((s) => s.isCallActive);
@@ -57,30 +58,80 @@ export const VoiceChat = () => {
   const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const summaryGeneratedRef = useRef<boolean>(false);
   const audioTracksRef = useRef<MediaStreamTrack[]>([]);
+  const [messageLimitInfo, setMessageLimitInfo] = useState<MessageLimitInfo | null>(null);
+  const toastShownRef = useRef(false);
+  const lowToastShownRef = useRef(false);
 
-  const handleDebouncedFinalTranscript = (text: string) => {
-    // Accumulate text
-    finalTranscriptRef.current += (finalTranscriptRef.current ? " " : "") + text;
-    
-    // Clear existing timeout
-    if (transcriptTimeoutRef.current) {
-      clearTimeout(transcriptTimeoutRef.current);
+  const checkUserMessageLimit = async () => {
+    if (!userId) return;
+
+    try {
+      const limitInfo = await checkMessageLimit(userId);
+      setMessageLimitInfo(limitInfo);
+
+      // show toast only when threshold is crossed
+      if (!limitInfo.canSendMessage && !toastShownRef.current) {
+        toast.error("Daily Message Limit Reached", {
+          description: `You've used all ${limitInfo.limit} messages for today.`,
+          action: {
+            label: "Upgrade",
+            onClick: () => (window.location.href = "/price"),
+          },
+        });
+        toastShownRef.current = true;
+      } else if (
+        !limitInfo.isPro &&
+        limitInfo.remainingMessages <= 3 &&
+        !lowToastShownRef.current
+      ) {
+        lowToastShownRef.current = true;
+      }
+    } catch (error) {
+      console.error("Error checking message limit:", error);
     }
-    
-    // Set new timeout - wait 1.5 seconds after last is_final
-    transcriptTimeoutRef.current = setTimeout(() => {
-      if (finalTranscriptRef.current) {
-        // Send ACCUMULATED text
-        if (userId) {
-          onUserFinal(userId, finalTranscriptRef.current);
-        }
+  };
+
+
+  const handleDebouncedFinalTranscript = async (text: string) => {
+    finalTranscriptRef.current += (finalTranscriptRef.current ? " " : "") + text;
+
+    if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
+
+    transcriptTimeoutRef.current = setTimeout(async () => {
+      if (finalTranscriptRef.current && userId) {
+        await incrementMessageCount(userId);
+        const updatedLimitInfo = await checkMessageLimit(userId);
+        setMessageLimitInfo(updatedLimitInfo);
+
+        // ✅ Warn when limit reached
+        if (!updatedLimitInfo.canSendMessage) {
+          toast.error("Daily Message Limit Reached", {
+            description: `You've used all ${updatedLimitInfo.limit} messages for today.`,
+            action: {
+              label: "Upgrade",
+              onClick: () => (window.location.href = "/price"),
+            },
+          });
+
+          if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+          }
         
-        // Reset
+          // ✅ End call and stop audio capture
+          handleEndCall();
+        
+          return;
+        }
+
+        onUserFinal(userId, finalTranscriptRef.current);
+
         finalTranscriptRef.current = "";
         transcriptTimeoutRef.current = null;
       }
     }, 1500);
   };
+
   // Get responsive MetaBalls config based on screen size
   const [metaBallConfig, setMetaBallConfig] = useState({
     ballCount: 20,
@@ -91,7 +142,7 @@ export const VoiceChat = () => {
   useEffect(() => {
     const updateMetaBallConfig = () => {
       const width = window.innerWidth;
-      
+
       if (width < 640) {
         // Mobile: fewer balls, smaller animation
         setMetaBallConfig({ ballCount: 12, animationSize: 40, cursorBallSize: 1.5 });
@@ -116,7 +167,7 @@ export const VoiceChat = () => {
   }, []);
 
   const connectWebSocket = () => {
-    const wsUrl = userId 
+    const wsUrl = userId
       ? `wss://api.euno.live/ws/audio?user_id=${encodeURIComponent(userId)}`
       : 'wss://api.euno.live/ws/audio';
     const ws = new WebSocket(wsUrl);
@@ -172,8 +223,8 @@ export const VoiceChat = () => {
 
               // Stop previous element
               if (audioPlaybackRef.current) {
-                try { audioPlaybackRef.current.pause(); } catch {}
-                try { URL.revokeObjectURL(audioPlaybackRef.current.src); } catch {}
+                try { audioPlaybackRef.current.pause(); } catch { }
+                try { URL.revokeObjectURL(audioPlaybackRef.current.src); } catch { }
               }
 
               const audio = new Audio(url);
@@ -183,12 +234,12 @@ export const VoiceChat = () => {
 
               audio.onended = () => {
                 if (data.status === 'complete') setIsPlaying(false);
-                try { URL.revokeObjectURL(url); } catch {}
+                try { URL.revokeObjectURL(url); } catch { }
               };
               audio.onerror = () => {
                 console.error('Audio playback error for WAV');
                 setIsPlaying(false);
-                try { URL.revokeObjectURL(url); } catch {}
+                try { URL.revokeObjectURL(url); } catch { }
               };
               void audio.play();
             } else {
@@ -249,14 +300,14 @@ export const VoiceChat = () => {
       });
 
       streamRef.current = stream;
-      
+
       // Store audio tracks for mute control
       audioTracksRef.current = stream.getAudioTracks();
-      
+
       const audioContext = new (window.AudioContext ||
         (window as any).webkitAudioContext)({
-        sampleRate: 16000,
-      });
+          sampleRate: 16000,
+        });
       audioContextRef.current = audioContext;
 
       await audioContext.audioWorklet.addModule("/pcm16-processor.js");
@@ -313,17 +364,31 @@ export const VoiceChat = () => {
   const handleMuteToggle = () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
-    
+
     // Control audio tracks
     audioTracksRef.current.forEach(track => {
       track.enabled = !newMutedState;
     });
-    
+
     console.log(newMutedState ? "Microphone muted" : "Microphone unmuted");
   };
 
   const handleStartCall = async () => {
     if (!isCallActive) {
+      // Check message limit before starting call
+      if (messageLimitInfo && !messageLimitInfo.canSendMessage) {
+        toast.error("Daily Message Limit Reached", {
+          description: `You've used all ${messageLimitInfo.limit} messages for today. Upgrade to Pro for unlimited messages!`,
+          action: {
+            label: "Upgrade",
+            onClick: () => {
+              window.location.href = "/price";
+            }
+          }
+        });
+        return;
+      }
+
       // Starting new chat session
       setIsCallActive(true);
       setIsRecording(true);
@@ -372,7 +437,7 @@ export const VoiceChat = () => {
       clearTimeout(transcriptTimeoutRef.current);
       transcriptTimeoutRef.current = null;
     }
-    
+
     // Clear accumulated transcript
     finalTranscriptRef.current = "";
 
@@ -381,7 +446,7 @@ export const VoiceChat = () => {
 
     // Close audio context
     if (audioCtxRef.current) {
-      try { audioCtxRef.current.close(); } catch {}
+      try { audioCtxRef.current.close(); } catch { }
       audioCtxRef.current = null;
       playTimeRef.current = 0;
     }
@@ -419,6 +484,13 @@ export const VoiceChat = () => {
     }
   }, [isMuted]);
 
+  // Check message limits when component mounts or user changes
+  useEffect(() => {
+    if (userId) {
+      checkUserMessageLimit();
+    }
+  }, [userId]);
+
   function base64ToUint8Array(base64: string): Uint8Array {
     const binaryString = atob(base64);
     const len = binaryString.length;
@@ -430,34 +502,59 @@ export const VoiceChat = () => {
   }
 
   const moods = [
-    { icon: Smile,      label: "Happy",   color: "yellow" },
-    { icon: Frown,      label: "Sad",     color: "blue" },
+    { icon: Smile, label: "Happy", color: "yellow" },
+    { icon: Frown, label: "Sad", color: "blue" },
     { icon: HeartPulse, label: "Anxious", color: "purple" },
-    { icon: AngryIcon,  label: "Angry",   color: "red" },
-    { icon: Feather,    label: "Calm",    color: "green" },
-    { icon: Sparkles,   label: "Excited", color: "orange" }
+    { icon: AngryIcon, label: "Angry", color: "red" },
+    { icon: Feather, label: "Calm", color: "green" },
+    { icon: Sparkles, label: "Excited", color: "orange" }
   ];
 
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
       <div className="absolute inset-0 w-full h-full">
         <MetaBalls
-        color="#a8e3ff"
-        cursorBallColor="#ffffff"
-        cursorBallSize={2}
-        ballCount={20}
-        animationSize={60}
-        enableMouseInteraction={false}
-        enableTransparency={true}
-        clumpFactor={1}
-        speed={isPlaying ? 1.0 : 0.4}
+          color="#a8e3ff"
+          cursorBallColor="#ffffff"
+          cursorBallSize={2}
+          ballCount={20}
+          animationSize={60}
+          enableMouseInteraction={false}
+          enableTransparency={true}
+          clumpFactor={1}
+          speed={isPlaying ? 1.0 : 0.4}
         />
       </div>
+
+      {/* Message Limit Indicator */}
+      {/* {messageLimitInfo && !messageLimitInfo.isPro && (
+        <div className="absolute top-18 right-4 z-10">
+          <div className="bg-gradient-to-r from-slate-800/90 to-slate-900/90 backdrop-blur-sm border border-white/10 rounded-lg px-4 py-2 shadow-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              <span className="text-sm text-slate-300">
+                {messageLimitInfo.remainingMessages} messages left today
+              </span>
+            </div>
+            {messageLimitInfo.remainingMessages <= 3 && (
+              <div className="mt-1">
+                <button
+                  onClick={() => window.location.href = "/price"}
+                  className="text-xs text-emerald-400 hover:text-emerald-300 underline"
+                >
+                  Upgrade to Pro for unlimited
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )} */}
 
       <div className="absolute bottom-8 sm:bottom-12 md:bottom-16 lg:bottom-14 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 sm:gap-6 md:gap-8 px-4">
         <button
           onClick={handleStartCall}
-          className="relative group"
+          disabled={!!(messageLimitInfo && !messageLimitInfo.canSendMessage)}
+          className={`relative group ${messageLimitInfo && !messageLimitInfo.canSendMessage ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label={isCallActive ? (isMuted ? 'Unmute' : 'Mute') : 'Start Chat'}
         >
           {isRecording && !isMuted && (
@@ -467,14 +564,15 @@ export const VoiceChat = () => {
               <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ripple" style={{ animationDelay: '1s' }} />
             </>
           )}
-          
-          <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
-            isCallActive
-              ? isMuted
-                ? "bg-gradient-to-br from-red-400 to-red-600 shadow-red-500/50 hover:scale-105"
-                : "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
-              : "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-slate-900/50 hover:scale-105"
-          }`}>
+
+          <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${messageLimitInfo && !messageLimitInfo.canSendMessage
+              ? "bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-500/50 cursor-not-allowed"
+              : isCallActive
+                ? isMuted
+                  ? "bg-gradient-to-br from-red-400 to-red-600 shadow-red-500/50 hover:scale-105"
+                  : "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
+                : "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-slate-900/50 hover:scale-105"
+            }`}>
             {isCallActive ? (
               isMuted ? (
                 <MicOff className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
@@ -488,12 +586,17 @@ export const VoiceChat = () => {
 
           <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
             <span className="text-xs sm:text-sm text-slate-400 font-light">
-              {isCallActive ? (isMuted ? 'Unmute' : 'Mute') : 'Start Chat'}
+              {messageLimitInfo && !messageLimitInfo.canSendMessage
+                ? 'Limit Reached'
+                : isCallActive
+                  ? (isMuted ? 'Unmute' : 'Mute')
+                  : 'Start Chat'
+              }
             </span>
           </div>
         </button>
 
-        <Popover>
+        {/* <Popover>
           <PopoverTrigger asChild>
             <button
               className="relative group"
@@ -536,7 +639,7 @@ export const VoiceChat = () => {
               })}
             </div>
           </PopoverContent>
-        </Popover>
+        </Popover> */}
 
         {isCallActive && (
           <button
