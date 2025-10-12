@@ -16,6 +16,7 @@ from deepgram import (
     SpeakOptions,
 )
 from app.agent.agent import generate_response
+from app.services.agent_service import agent_service
 
 load_dotenv()
 
@@ -26,6 +27,9 @@ deepgram: DeepgramClient = DeepgramClient(os.getenv('DEEPGRAM_API_KEY'))
 @router.websocket("/ws/audio")
 async def websocket_audio_endpoint(websocket: WebSocket):
     await websocket.accept()
+    
+    # Extract user_id from query parameters
+    user_id = websocket.query_params.get("user_id")
     
     dg_connection = None
     
@@ -42,7 +46,7 @@ async def websocket_audio_endpoint(websocket: WebSocket):
             interim_results=True,
             utterance_end_ms="1000",
             vad_events=True,
-            endpointing=300
+            endpointing=1500
         )
         
         loop = asyncio.get_running_loop()
@@ -71,9 +75,8 @@ async def websocket_audio_endpoint(websocket: WebSocket):
                 if result.is_final:
                     print(f"🔄 Generating streaming TTS via Deepgram SDK for: '{sentence}'")
                     try:
-                        # Generate response text
-                        from app.services.agent_service import agent_service
-                        llm_text = agent_service.generate_response(sentence)
+
+                        llm_text = agent_service.generate_response(sentence, user_id)
 
                         dg_speak = deepgram.speak.websocket.v("1")
 

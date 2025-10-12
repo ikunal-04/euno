@@ -1,5 +1,8 @@
+"use client"
+
 import { motion } from 'framer-motion'
 import React from 'react'
+import Logo from "@/components/logo"
 
 const NavLanding = () => {
   return (
@@ -15,17 +18,7 @@ const NavLanding = () => {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="flex items-center gap-3 pl-16">
-              {/* Minimalist logo */}
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white/20 to-gray-500/30 flex items-center justify-center shadow-sm">
-                <div className="w-3 h-3 rounded-full bg-white/90"></div>
-              </div>
-              
-              {/* Brand name - Color adjusted to text-[#faf9f5] for visibility on dark background */}
-              <h1 className="text-xl font-light text-[#faf9f5] tracking-wide lowercase">
-                mindspace
-              </h1>
-            </div>
+            <Logo />
           </motion.div>
         
         {/* Navigation links adjusted to mimic the reference image's simple navigation */}
@@ -34,16 +27,13 @@ const NavLanding = () => {
             About
           </button>
           <button className="text-[#faf9f5] hover:text-white transition-colors text-sm font-light">
-            Features
-          </button>
-          <button className="text-[#faf9f5] hover:text-white transition-colors text-sm font-light">
             Pricing
           </button>
           <button className="text-[#faf9f5] hover:text-white transition-colors text-sm font-light">
-            Contact Sales
+            Contact
           </button>
           <button className="px-5 py-2 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors shadow-lg">
-            Try MindSpace
+            Try Euno
           </button>
         </div>
       </nav>

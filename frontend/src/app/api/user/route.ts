@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     // Fetch user details from Supabase
     const { data, error } = await supabase
         .from("users")
-        .select("id, name, email, imageUrl, plans")
+        .select("id, userId, name, email, imageUrl, plans")
         .eq("email", session.user.email)
         .single();
 

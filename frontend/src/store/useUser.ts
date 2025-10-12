@@ -1,17 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Session } from "next-auth";
-
-type ExtendedUser = Session["user"] & {
-  id?: string;
-  imageUrl?: string;
-  plans?: string | null;
-};
+import { Users } from "@/types/users";
 
 interface UserState {
-  user: ExtendedUser | null;
+  user: Users | null;
   loading: boolean;
-  setUser: (user: ExtendedUser | null) => void;
+  setUser: (user: Users | null) => void;
   clearUser: () => void;
   setLoading: (loading: boolean) => void;
 }

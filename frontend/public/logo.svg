@@ -1,0 +1,56 @@
+<svg
+  width="36"
+  height="36"
+  viewBox="0 0 36 36"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <!-- Metallic gradient -->
+    <linearGradient id="metallic-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="25%" stop-color="#e5e5e5" />
+      <stop offset="50%" stop-color="#fefefe" />
+      <stop offset="75%" stop-color="#d0d0d0" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
+
+    <!-- Subtle metallic sheen -->
+    <filter id="metallic-sheen" x="0" y="0">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.8" />
+      <feOffset dx="0" dy="1" result="offsetblur" />
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.9" />
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer ring -->
+  <circle
+    cx="18"
+    cy="18"
+    r="16"
+    stroke="url(#metallic-gradient)"
+    stroke-width="2"
+    opacity="1"
+    filter="url(#metallic-sheen)"
+  />
+
+  <!-- Inner design (abstract “E” pattern) -->
+  <circle cx="12" cy="14" r="2.5" fill="url(#metallic-gradient)" filter="url(#metallic-sheen)" />
+  <circle cx="18" cy="12" r="2.5" fill="url(#metallic-gradient)" filter="url(#metallic-sheen)" />
+  <circle cx="24" cy="14" r="2.5" fill="url(#metallic-gradient)" filter="url(#metallic-sheen)" />
+  <circle cx="18" cy="22" r="2.5" fill="url(#metallic-gradient)" filter="url(#metallic-sheen)" />
+  <path
+    d="M12 14 L18 12 L24 14 L18 22 Z"
+    stroke="url(#metallic-gradient)"
+    stroke-width="1.8"
+    opacity="0.85"
+    fill="none"
+    filter="url(#metallic-sheen)"
+  />
+</svg>
