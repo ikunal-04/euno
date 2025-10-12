@@ -42,13 +42,13 @@ const NavLanding = () => {
             pr-2 sm:pr-6 md:pr-10
           "
         >
-          <button onClick={ () => router.push('/about') } className="text-[#faf9f5]/90 hover:text-white transition-colors text-xs sm:text-sm md:text-base font-light">
+          <button onClick={() => router.push('/about')} className="text-[#faf9f5]/90 hover:text-white transition-colors text-xs sm:text-sm md:text-base font-light">
             About
           </button>
-          <button onClick={ () => router.push('/price') } className="text-[#faf9f5]/90 hover:text-white transition-colors text-xs sm:text-sm md:text-base font-light">
+          <button onClick={() => router.push('/price')} className="text-[#faf9f5]/90 hover:text-white transition-colors text-xs sm:text-sm md:text-base font-light">
             Pricing
           </button>
-          <button onClick={ () => router.push('/contact') } className="text-[#faf9f5]/90 hover:text-white transition-colors text-xs sm:text-sm md:text-base font-light">
+          <button onClick={() => router.push('/contact')} className="text-[#faf9f5]/90 hover:text-white transition-colors text-xs sm:text-sm md:text-base font-light">
             Contact
           </button>
           <button
@@ -71,9 +71,10 @@ const NavLanding = () => {
         <div className="flex items-center sm:hidden gap-3">
           {/* Full Try Euno button (shown on small screens too) */}
           <button
+            onClick={() => signIn("google")}
             className="
-              px-4 py-1.5 bg-white text-gray-900 
-              rounded-md text-sm font-medium 
+              px-3 py-1.5 bg-white text-gray-900 
+              rounded-md text-xs font-medium 
               hover:bg-gray-100 transition-colors shadow-sm
             "
           >
@@ -94,44 +95,72 @@ const NavLanding = () => {
         </div>
       </nav>
 
-      {/* === Mobile Dropdown Menu === */}
+      {/* === Mobile Glassmorphic Dropdown Menu === */}
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="
-              fixed top-[60px] left-0 right-0 z-40 
-              bg-[#141413]/95 backdrop-blur-md border-t border-white/10 
-              flex flex-col items-center gap-4 py-4
-              sm:hidden
-            "
-          >
-            {[
-              { label: "About", route: "/about" },
-              { label: "Pricing", route: "/price" },
-              { label: "Contact", route: "/contact" },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => {
-                  setMenuOpen(false); // close menu
-                  router.push(item.route); // navigate
-                }}
-                className="
-                  text-[#faf9f5]/90 hover:text-white 
-                  transition-colors text-sm font-light
-                "
-              >
-                {item.label}
-              </button>
-            ))}
-          </motion.div>
+          <>
+            {/* Backdrop overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMenuOpen(false)}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm sm:hidden"
+            />
+
+            {/* Glass dropdown menu */}
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="
+                fixed top-[70px] left-4 right-4 z-50
+                mx-auto max-w-sm
+                bg-gradient-to-b from-[#1a1a1a]/95 to-[#0f0f0f]/95 
+                backdrop-blur-xl 
+                border border-white/10 
+                rounded-2xl 
+                shadow-2xl shadow-black/50
+                overflow-hidden
+                sm:hidden
+              "
+            >
+              <div className="p-2">
+                {[
+                  { label: "About", route: "/about" },
+                  { label: "Pricing", route: "/price" },
+                  { label: "Contact", route: "/contact" },
+                ].map((item, index) => (
+                  <motion.button
+                    key={item.label}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      router.push(item.route);
+                    }}
+                    className="
+                      w-full text-left
+                      px-4 py-3
+                      text-[#faf9f5]/90 hover:text-white 
+                      hover:bg-white/5
+                      transition-all duration-200
+                      rounded-xl
+                      text-sm font-light
+                      border-b border-white/5 last:border-0
+                    "
+                  >
+                    {item.label}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
-
     </div>
   );
 };

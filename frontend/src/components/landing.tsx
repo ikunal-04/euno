@@ -9,7 +9,6 @@ import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 
-
 const dmSans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
@@ -42,7 +41,7 @@ export default function EunoLandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#121211] text-[#f8f8f6] flex flex-col overflow-hidden">
+    <div className="h-[90vh] w-full bg-[#141413] text-[#f8f8f6] flex flex-col overflow-hidden">
       <NavLanding />
 
       <div
@@ -50,7 +49,8 @@ export default function EunoLandingPage() {
           flex flex-1 flex-col lg:flex-row 
           items-center justify-center lg:justify-between 
           max-w-[1300px] mx-auto w-full 
-          px-6 lg:px-16 py-20 gap-12
+          pt-8
+          px-6 lg:px-16 py-0 gap-8 lg:gap-12
         "
       >
         {/* ===== Left Section ===== */}
@@ -59,31 +59,28 @@ export default function EunoLandingPage() {
             flex-1 flex flex-col justify-center 
             items-center lg:items-start 
             text-center lg:text-left 
-            space-y-8 z-10
+            space-y-6 z-10
           "
         >
-          {/* Heading */}
           <h1
-            className={` text-[2.5rem] sm:text-[3rem] md:text-[4rem] leading-[1.1] font-delius tracking-tight`}
+            className={`text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] leading-[1.1] font-delius tracking-tight`}
           >
             <span className="block text-[#f5f4f0]/90">Where thoughts</span>
-            <span className="block text-[#f5f4f0] font-semibold">
+            <span className="block text-[#f5f4f0]/90">
               find their voice.
             </span>
           </h1>
 
-          {/* Subtitle */}
           <p
-            className={`${dmSans.className} text-sm sm:text-base md:text-lg text-[#f5f4f0]/70 max-w-sm leading-relaxed`}
+            className={`${dmSans.className} text-xs sm:text-sm md:text-base lg:text-lg text-[#f5f4f0]/70 max-w-sm leading-relaxed`}
           >
             Euno is your private companion for reflection, conversation, and
             gentle guidance.
           </p>
 
-          {/* Google Sign-In Button */}
           <button
             onClick={() => signIn("google")}
-            className={`${dmSans.className} flex items-center justify-center gap-3 px-5 py-3 w-[280px] sm:w-[320px] md:w-[340px] bg-[#121211] border border-[#2a2928] rounded-xl text-sm sm:text-base font-medium text-[#f5f4f0] shadow-xl hover:bg-black transition-all duration-300`}
+            className={`${dmSans.className} flex items-center justify-center gap-3 px-4 sm:px-5 py-2 sm:py-3 w-[240px] sm:w-[280px] md:w-[320px] bg-[#121211] border border-[#2a2928] rounded-xl text-xs sm:text-sm md:text-base font-medium text-[#f5f4f0] shadow-xl hover:bg-black transition-all duration-300`}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -108,12 +105,11 @@ export default function EunoLandingPage() {
 
           <Separator className="bg-white/30 w-[80%] sm:w-[60%]" />
 
-          {/* Login Form */}
           <form
             onSubmit={handleTestLogin}
-            className="flex flex-col gap-4 w-[80%] sm:w-[320px]"
+            className="flex flex-col gap-3 w-[80%] sm:w-[280px]"
           >
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-1.5 w-full">
               <Label>Email</Label>
               <Input
                 type="email"
@@ -123,7 +119,7 @@ export default function EunoLandingPage() {
               />
             </div>
 
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-1.5 w-full">
               <Label>Password</Label>
               <Input
                 type="password"
@@ -140,8 +136,8 @@ export default function EunoLandingPage() {
         </div>
 
         {/* ===== Right Section - Video (Hidden on small screens) ===== */}
-        <div className="hidden lg:flex flex-1 justify-center lg:justify-end w-full relative">
-          <div className="relative w-full h-[65vh] lg:h-[80vh] max-w-none lg:max-w-[720px] overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+        <div className="hidden pt-32 lg:flex flex-1 justify-center lg:justify-end w-full h-full relative">
+          <div className="relative w-full h-[90%] max-w-[720px] overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
             <video
               className="absolute inset-0 w-full h-full object-cover object-center rounded-3xl"
               src="/video.mp4"
