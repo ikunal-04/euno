@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, X } from "lucide-react";
+import { Mic, MicOff, X } from "lucide-react";
 import MetaBalls from "../MetaBalls";
 import { 
   Smile, 
@@ -14,6 +14,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useVoiceChatStore } from "@/store/voice-chat";
 import { useUserStore } from "@/store/useUser";
+import { generateSummary } from "@/lib/summary/server";
 
 export const VoiceChat = () => {
   const isCallActive = useVoiceChatStore((s) => s.isCallActive);
@@ -54,6 +55,8 @@ export const VoiceChat = () => {
   const playTimeRef = useRef(0);
   const finalTranscriptRef = useRef<string>("");
   const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const summaryGeneratedRef = useRef<boolean>(false);
+  const audioTracksRef = useRef<MediaStreamTrack[]>([]);
 
   const handleDebouncedFinalTranscript = (text: string) => {
     // Accumulate text
@@ -113,7 +116,10 @@ export const VoiceChat = () => {
   }, []);
 
   const connectWebSocket = () => {
-    const ws = new WebSocket('wss://api.euno.live/ws/audio');
+    const wsUrl = userId 
+      ? `wss://api.euno.live/ws/audio?user_id=${encodeURIComponent(userId)}`
+      : 'wss://api.euno.live/ws/audio';
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -243,6 +249,10 @@ export const VoiceChat = () => {
       });
 
       streamRef.current = stream;
+      
+      // Store audio tracks for mute control
+      audioTracksRef.current = stream.getAudioTracks();
+      
       const audioContext = new (window.AudioContext ||
         (window as any).webkitAudioContext)({
         sampleRate: 16000,
@@ -260,7 +270,10 @@ export const VoiceChat = () => {
       workletNode.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
         const buffer = event.data;
         if (buffer && wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(buffer);
+          // Check mute state before sending
+          if (!isMuted) {
+            wsRef.current.send(buffer);
+          }
         }
       };
 
@@ -292,25 +305,62 @@ export const VoiceChat = () => {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+
+    // Clear audio tracks
+    audioTracksRef.current = [];
+  };
+
+  const handleMuteToggle = () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    
+    // Control audio tracks
+    audioTracksRef.current.forEach(track => {
+      track.enabled = !newMutedState;
+    });
+    
+    console.log(newMutedState ? "Microphone muted" : "Microphone unmuted");
   };
 
   const handleStartCall = async () => {
-    setIsCallActive(true);
-    setIsRecording(true);
+    if (!isCallActive) {
+      // Starting new chat session
+      setIsCallActive(true);
+      setIsRecording(true);
 
-    // Connect WebSocket
-    connectWebSocket();
+      // Generate summary only once per session if user has previous messages
+      if (userId && !summaryGeneratedRef.current) {
+        try {
+          await generateSummary({ userId });
+          summaryGeneratedRef.current = true;
+        } catch (error) {
+          console.error("Error generating summary:", error);
+        }
+      }
 
-    // Start audio capture
-    await startAudioCapture();
+      // Connect WebSocket
+      connectWebSocket();
 
-    // Optional: You can log a synthetic welcome turn if desired. Leaving UI unchanged.
+      // Start audio capture
+      await startAudioCapture();
+    } else {
+      // Toggle mute/unmute when call is active
+      handleMuteToggle();
+    }
   };
 
   const handleEndCall = () => {
+    // Disconnect WebSocket and end conversation
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    // Reset all states
     setIsCallActive(false);
     setIsRecording(false);
     setIsPlaying(false);
+    setIsMuted(false);
     setCurrentUserText("");
     setCurrentAgentText("");
 
@@ -326,6 +376,9 @@ export const VoiceChat = () => {
     // Clear accumulated transcript
     finalTranscriptRef.current = "";
 
+    // Reset summary generated flag for next session
+    summaryGeneratedRef.current = false;
+
     // Close audio context
     if (audioCtxRef.current) {
       try { audioCtxRef.current.close(); } catch {}
@@ -335,12 +388,6 @@ export const VoiceChat = () => {
 
     // Stop audio capture
     stopAudioCapture();
-
-    // Close WebSocket connection
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
   };
 
   useEffect(() => {
@@ -350,15 +397,27 @@ export const VoiceChat = () => {
     };
   }, []);
 
-  const handleToggleMute = () => {
-    setIsMuted(!isMuted);
-  };
 
   useEffect(() => {
     if (audioPlaybackRef.current) {
       audioPlaybackRef.current.volume = isMuted ? 0 : volume;
     }
   }, [isMuted, volume]);
+
+  // Handle mute state changes
+  useEffect(() => {
+    if (workletNodeRef.current) {
+      workletNodeRef.current.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+        const buffer = event.data;
+        if (buffer && wsRef.current?.readyState === WebSocket.OPEN) {
+          // Check mute state before sending
+          if (!isMuted) {
+            wsRef.current.send(buffer);
+          }
+        }
+      };
+    }
+  }, [isMuted]);
 
   function base64ToUint8Array(base64: string): Uint8Array {
     const binaryString = atob(base64);
@@ -397,11 +456,11 @@ export const VoiceChat = () => {
 
       <div className="absolute bottom-8 sm:bottom-12 md:bottom-16 lg:bottom-14 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 sm:gap-6 md:gap-8 px-4">
         <button
-          onClick={isCallActive ? handleEndCall : handleStartCall}
+          onClick={handleStartCall}
           className="relative group"
-          aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
+          aria-label={isCallActive ? (isMuted ? 'Unmute' : 'Mute') : 'Start Chat'}
         >
-          {isRecording && (
+          {isRecording && !isMuted && (
             <>
               <div className="absolute inset-0 rounded-full bg-emerald-500/30 animate-ripple" />
               <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ripple" style={{ animationDelay: '0.5s' }} />
@@ -410,12 +469,18 @@ export const VoiceChat = () => {
           )}
           
           <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
-            isRecording
-              ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
+            isCallActive
+              ? isMuted
+                ? "bg-gradient-to-br from-red-400 to-red-600 shadow-red-500/50 hover:scale-105"
+                : "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
               : "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-slate-900/50 hover:scale-105"
           }`}>
-            {isRecording ? (
-              <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
+            {isCallActive ? (
+              isMuted ? (
+                <MicOff className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
+              ) : (
+                <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
+              )
             ) : (
               <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
             )}
@@ -423,7 +488,7 @@ export const VoiceChat = () => {
 
           <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
             <span className="text-xs sm:text-sm text-slate-400 font-light">
-              {isRecording ? 'Recording' : 'Start'}
+              {isCallActive ? (isMuted ? 'Unmute' : 'Mute') : 'Start Chat'}
             </span>
           </div>
         </button>
@@ -473,18 +538,20 @@ export const VoiceChat = () => {
           </PopoverContent>
         </Popover>
 
-        <button
-          onClick={handleEndCall}
-          className="relative group"
-          aria-label="End Call"
-        >
-          <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-500 hover:to-red-600 shadow-2xl shadow-slate-900/50 hover:shadow-red-500/50 hover:scale-105">
-            <X className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
-          </div>
-          <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
-            <span className="text-xs sm:text-sm text-slate-400 font-light">End Call</span>
-          </div>
-        </button>
+        {isCallActive && (
+          <button
+            onClick={handleEndCall}
+            className="relative group"
+            aria-label="End Call"
+          >
+            <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-2xl shadow-red-500/50 hover:shadow-red-600/50 hover:scale-105">
+              <X className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white transition-colors" strokeWidth={2.5} />
+            </div>
+            <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+              <span className="text-xs sm:text-sm text-slate-400 font-light">End Call</span>
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );

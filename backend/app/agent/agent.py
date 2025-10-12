@@ -1,6 +1,7 @@
 import asyncio
 from app.services.agent_service import agent_service
 from app.services.streaming_tts_service import streaming_tts_service
+from app.services.tts_service import tts_service
 
 async def generate_response(question: str) -> dict:
     """
@@ -9,9 +10,7 @@ async def generate_response(question: str) -> dict:
     try:
         # Generate text response using agent service
         text_response = agent_service.generate_response(question)
-        
-        # Generate audio using TTS service (fallback to non-streaming)
-        from app.services.tts_service import tts_service
+
         tts_result = await tts_service.synthesize_speech(text_response)
         
         # Combine results
