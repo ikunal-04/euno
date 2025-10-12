@@ -12,23 +12,35 @@ import {
   Sparkles 
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-
-interface Message {
-  id: string;
-  type: "user" | "agent";
-  text: string;
-  timestamp: Date;
-}
+import { useVoiceChatStore } from "@/store/voice-chat";
+import { useUserStore } from "@/store/useUser";
 
 export const VoiceChat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isCallActive, setIsCallActive] = useState(false);
-  const [currentUserText, setCurrentUserText] = useState("");
-  const [currentAgentText, setCurrentAgentText] = useState("");
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(0.8);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const isCallActive = useVoiceChatStore((s) => s.isCallActive);
+  const setIsCallActive = useVoiceChatStore((s) => s.setIsCallActive);
+
+  const currentUserText = useVoiceChatStore((s) => s.currentUserText);
+  const setCurrentUserText = useVoiceChatStore((s) => s.setCurrentUserText);
+
+  const currentAgentText = useVoiceChatStore((s) => s.currentAgentText);
+  const setCurrentAgentText = useVoiceChatStore((s) => s.setCurrentAgentText);
+
+  const isMuted = useVoiceChatStore((s) => s.isMuted);
+  const setIsMuted = useVoiceChatStore((s) => s.setIsMuted);
+
+  const volume = useVoiceChatStore((s) => s.volume);
+  const setVolume = useVoiceChatStore((s) => s.setVolume);
+
+  const isRecording = useVoiceChatStore((s) => s.isRecording);
+  const setIsRecording = useVoiceChatStore((s) => s.setIsRecording);
+
+  const isPlaying = useVoiceChatStore((s) => s.isPlaying);
+  const setIsPlaying = useVoiceChatStore((s) => s.setIsPlaying);
+
+  const onUserFinal = useVoiceChatStore((s) => s.onUserFinal);
+  const onAgentFinal = useVoiceChatStore((s) => s.onAgentFinal);
+
+  const userId = useUserStore((s) => s.user?.userId);
 
   const wsRef = useRef<WebSocket | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -40,7 +52,32 @@ export const VoiceChat = () => {
   const isPlayingRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const playTimeRef = useRef(0);
+  const finalTranscriptRef = useRef<string>("");
+  const transcriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const handleDebouncedFinalTranscript = (text: string) => {
+    // Accumulate text
+    finalTranscriptRef.current += (finalTranscriptRef.current ? " " : "") + text;
+    
+    // Clear existing timeout
+    if (transcriptTimeoutRef.current) {
+      clearTimeout(transcriptTimeoutRef.current);
+    }
+    
+    // Set new timeout - wait 1.5 seconds after last is_final
+    transcriptTimeoutRef.current = setTimeout(() => {
+      if (finalTranscriptRef.current) {
+        // Send ACCUMULATED text
+        if (userId) {
+          onUserFinal(userId, finalTranscriptRef.current);
+        }
+        
+        // Reset
+        finalTranscriptRef.current = "";
+        transcriptTimeoutRef.current = null;
+      }
+    }, 1500);
+  };
   // Get responsive MetaBalls config based on screen size
   const [metaBallConfig, setMetaBallConfig] = useState({
     ballCount: 20,
@@ -85,18 +122,19 @@ export const VoiceChat = () => {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "transcription") {
-        setCurrentUserText(data.text);
-
-        console.log("🗣️ Transcription:", data.text, "Final:", data.is_final);
-
-        // If transcription is final, add to messages
         if (data.is_final) {
-          const userMessage: Message = {
-            id: `user-${Date.now()}`,
-            type: "user",
-            text: data.text,
-            timestamp: new Date(),
-          };
+          // Use debounced handler - it accumulates and sends after timeout
+          handleDebouncedFinalTranscript(data.text);
+        } else {
+          // Show interim results to user
+          setCurrentUserText(data.text);
+        }
+      }
+
+      if (data.type === 'agent_response') {
+        setCurrentUserText(data.text);
+        if (data.is_final) {
+          if (userId) onUserFinal(userId, data.text);
           setCurrentUserText("");
         }
       }
@@ -104,18 +142,10 @@ export const VoiceChat = () => {
       if (data.type === 'agent_response') {
         // Handle text response
         if (typeof data.text === 'string' && data.text.trim().length > 0) {
-          // Only add to messages if it's the final response
           if (data.is_final) {
-            const agentMessage: Message = {
-              id: `agent-${Date.now()}`,
-              type: "agent",
-              text: data.text,
-              timestamp: new Date(),
-            };
-            setMessages((prev) => [...prev, agentMessage]);
+            onAgentFinal(userId || "", data.text);
             setCurrentAgentText("");
           } else {
-            // Show streaming text
             setCurrentAgentText(data.text);
           }
         }
@@ -123,7 +153,6 @@ export const VoiceChat = () => {
         // Handle audio (both streaming and complete)
         if (data.audio_data && (data.status === 'streaming' || data.status === 'complete')) {
           try {
-            console.log('🔊 Received audio chunk:', data.audio_mime_type);
 
             const mime = (data.audio_mime_type || '').toLowerCase();
             const u8 = base64ToUint8Array(data.audio_data);
@@ -275,14 +304,7 @@ export const VoiceChat = () => {
     // Start audio capture
     await startAudioCapture();
 
-    // Add welcome message
-    const welcomeMessage: Message = {
-      id: `agent-welcome-${Date.now()}`,
-      type: "agent",
-      text: "Hello! I'm here to listen and support you. Feel free to share whatever is on your mind.",
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, welcomeMessage]);
+    // Optional: You can log a synthetic welcome turn if desired. Leaving UI unchanged.
   };
 
   const handleEndCall = () => {
@@ -295,6 +317,14 @@ export const VoiceChat = () => {
     // Clear audio queue and stop playing
     audioQueueRef.current = [];
     isPlayingRef.current = false;
+
+    if (transcriptTimeoutRef.current) {
+      clearTimeout(transcriptTimeoutRef.current);
+      transcriptTimeoutRef.current = null;
+    }
+    
+    // Clear accumulated transcript
+    finalTranscriptRef.current = "";
 
     // Close audio context
     if (audioCtxRef.current) {
@@ -315,12 +345,13 @@ export const VoiceChat = () => {
 
   useEffect(() => {
     return () => {
+      if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
       handleEndCall();
     };
   }, []);
 
   const handleToggleMute = () => {
-    setIsMuted((prev) => !prev);
+    setIsMuted(!isMuted);
   };
 
   useEffect(() => {
