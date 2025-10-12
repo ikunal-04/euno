@@ -102,37 +102,6 @@ export default function EunoLandingPage() {
             </svg>
             <span>Continue with Google</span>
           </button>
-
-          <Separator className="bg-white/30 w-[80%] sm:w-[60%]" />
-
-          <form
-            onSubmit={handleTestLogin}
-            className="flex flex-col gap-3 w-[80%] sm:w-[280px]"
-          >
-            <div className="flex flex-col gap-1.5 w-full">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="test@example.com"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5 w-full">
-              <Label>Password</Label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="test123"
-              />
-            </div>
-
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Login"}
-            </Button>
-          </form>
         </div>
 
         {/* ===== Right Section - Video (Hidden on small screens) ===== */}
