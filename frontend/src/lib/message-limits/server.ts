@@ -22,7 +22,7 @@ export async function checkMessageLimit(userId: string): Promise<MessageLimitInf
             .single();
 
         const isPro = userData?.plans === "PRO";
-        const limit = isPro ? Infinity : 15; // Pro users have unlimited, free users have 15
+        const limit = isPro ? Infinity : 5; // Pro users have unlimited, free users have 15
 
         if (isPro) {
             return {
@@ -64,9 +64,9 @@ export async function checkMessageLimit(userId: string): Promise<MessageLimitInf
         return {
             canSendMessage: true,
             currentCount: 0,
-            limit: 15,
+            limit: 5,
             isPro: false,
-            remainingMessages: 15
+            remainingMessages: 5
         };
     }
 }
@@ -88,10 +88,8 @@ export async function incrementMessageCount(userId: string): Promise<void> {
 
         let newCount = 1;
         if (lastMessageDate === today) {
-            // Same day, increment existing count
             newCount = currentCount + 1;
         } else {
-            // New day, reset to 1
             newCount = 1;
         }
 
