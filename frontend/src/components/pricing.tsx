@@ -136,7 +136,7 @@ export default function PricingPage() {
                   plan.id === PLAN_IDS.Free
                     ? "bg-gray-600 text-gray-400 cursor-not-allowed"
                     : plan.id === PLAN_IDS.Pro && user?.plans === "PRO"
-                    ? "bg-green-600 text-white cursor-not-allowed"
+                    ? "bg-[#a8e3ff]/10 text-white cursor-not-allowed"
                     : plan.highlight
                     ? "bg-[#a8e3ff] text-black hover:bg-[#9dd3ef]"
                     : "bg-[#2a2927] hover:bg-[#3a3937]"
