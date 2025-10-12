@@ -1,4 +1,4 @@
-"use server"
+"use server";
 
 import { createClient } from "@/lib/db/server";
 
@@ -10,107 +10,108 @@ export interface MessageLimitInfo {
     remainingMessages: number;
 }
 
+/**
+ * Checks user's daily message limit based on their plan.
+ */
 export async function checkMessageLimit(userId: string): Promise<MessageLimitInfo> {
     try {
         const supabase = await createClient();
-        
-        // Get user's plan and message count
-        const { data: userData } = await supabase
+
+        // Fetch user data from Supabase
+        const { data: userData, error } = await supabase
             .from("users")
             .select("plans, messageCount, lastMessageDate")
             .eq("userId", userId)
             .single();
 
+        if (error) throw error;
+
         const isPro = userData?.plans === "PRO";
-        const limit = isPro ? Infinity : 5; // Pro users have unlimited, free users have 15
+        const limit = isPro ? Infinity : 5; // 🔥 FREE = 5/day, PRO = unlimited
+        const today = new Date().toISOString().split("T")[0];
 
-        if (isPro) {
-            return {
-                canSendMessage: true,
-                currentCount: 0,
-                limit: Infinity,
-                isPro: true,
-                remainingMessages: Infinity
-            };
-        }
-
-        // Check if it's a new day for free users
-        const today = new Date().toISOString().split('T')[0];
-        const lastMessageDate = userData?.lastMessageDate;
-        
         let currentCount = 0;
-        if (lastMessageDate === today) {
-            // Same day, use existing count
+
+        if (userData?.lastMessageDate === today) {
+            // Same day → use existing count
             currentCount = userData?.messageCount || 0;
         } else {
-            // New day, reset count
+            // New day → reset count
             currentCount = 0;
         }
 
-        const canSendMessage = currentCount < limit;
-        const remainingMessages = Math.max(0, limit - currentCount);
+        const canSendMessage = isPro || currentCount < limit;
+        const remainingMessages = isPro ? Infinity : Math.max(0, limit - currentCount);
 
         return {
             canSendMessage,
             currentCount,
             limit,
-            isPro: false,
-            remainingMessages
+            isPro,
+            remainingMessages,
         };
-
     } catch (error) {
         console.error("Error checking message limit:", error);
-        // Default to allowing messages if there's an error
+
+        // Default: allow 5 free messages in case of error
         return {
             canSendMessage: true,
             currentCount: 0,
             limit: 5,
             isPro: false,
-            remainingMessages: 5
+            remainingMessages: 5,
         };
     }
 }
 
+/**
+ * Increments the user's message count and resets if new day.
+ */
 export async function incrementMessageCount(userId: string): Promise<void> {
     try {
         const supabase = await createClient();
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
 
-        // Get current user data
-        const { data: userData } = await supabase
+        const { data: userData, error: fetchError } = await supabase
             .from("users")
-            .select("messageCount, lastMessageDate")
+            .select("messageCount, lastMessageDate, plans")
             .eq("userId", userId)
             .single();
 
-        const lastMessageDate = userData?.lastMessageDate;
-        const currentCount = userData?.messageCount || 0;
+        if (fetchError) throw fetchError;
+        if (!userData) return;
 
+        const isPro = userData.plans === "PRO";
+        if (isPro) return; // no limits for pro users
+
+        const lastMessageDate = userData.lastMessageDate;
         let newCount = 1;
+
         if (lastMessageDate === today) {
-            newCount = currentCount + 1;
-        } else {
-            newCount = 1;
+            newCount = (userData.messageCount ?? 0) + 1;
         }
 
-        // Update user's message count and last message date
-        await supabase
+        const { error: updateError } = await supabase
             .from("users")
             .update({
                 messageCount: newCount,
-                lastMessageDate: today
+                lastMessageDate: today,
             })
             .eq("userId", userId);
 
-    } catch (error) {
-        console.error("Error incrementing message count:", error);
+        if (updateError) throw updateError;
+    } catch (err) {
+        console.error("❌ incrementMessageCount failed:", err);
     }
 }
 
+/**
+ * Utility for plan retrieval if needed elsewhere
+ */
 export async function getUserPlan(userId: string): Promise<"FREE" | "PRO"> {
     try {
         const supabase = await createClient();
-        
+
         const { data: userData } = await supabase
             .from("users")
             .select("plans")
