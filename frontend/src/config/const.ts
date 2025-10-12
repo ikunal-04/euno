@@ -1,5 +1,5 @@
 
 export const PLAN_IDS = {
     Free: "undenfined",
-    Pro: "plan_RQWZU4zue8tW6b",
+    Pro: "plan_RSg2EmN4qRIe9B",
 }

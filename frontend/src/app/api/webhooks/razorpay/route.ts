@@ -4,8 +4,8 @@ import Razorpay from "razorpay";
 import { createClient } from "@/lib/db/server";
 
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_TEST_KEY!,
-  key_secret: process.env.RAZORPAY_TEST_SECRET!,
+  key_id: process.env.RAZORPAY_LIVE_KEY!,
+  key_secret: process.env.RAZORPAY_LIVE_SECRET!,
 });
 
 export async function POST(req: NextRequest) {

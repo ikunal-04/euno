@@ -18,16 +18,13 @@ export const createSubscription = async (planId: string, name?: string, email?: 
         const { id } = await response.json();
 
         const options = {
-            key: process.env.RAZORPAY_TEST_KEY,
+            key: process.env.RAZORPAY_LIVE_KEY,
             subscription_id: id,
-            name: "Innpae",
-            description: "Test transactions",
-            image: "/avatar-fallback.png",
+            name: "Euno",
+            description: "Your AI Companion for Life's Moments",
+            image: "/logo.svg",
             // callback_url: "http://localhost:3000",
             handler: function (response: any) {
-                // Razorpay returns these IDs
-                console.log("Razorpay response:", response);
-
                 fetch("/api/verify", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

@@ -4,7 +4,7 @@ import { authOptions } from "@/config/auth";
 import { createClient } from "@/lib/db/server";
 import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_TEST_KEY, key_secret: process.env.RAZORPAY_TEST_SECRET });
+const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_LIVE_KEY, key_secret: process.env.RAZORPAY_LIVE_SECRET });
 
 export async function POST(req: NextRequest) {
     try {
