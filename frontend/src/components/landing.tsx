@@ -66,7 +66,7 @@ export default function EunoLandingPage() {
             className={`text-[2rem] sm:text-[2.5rem] md:text-[3rem] lg:text-[3.5rem] leading-[1.1] font-delius tracking-tight`}
           >
             <span className="block text-[#f5f4f0]/90">Where thoughts</span>
-            <span className="block text-[#f5f4f0] font-semibold">
+            <span className="block text-[#f5f4f0]/90">
               find their voice.
             </span>
           </h1>

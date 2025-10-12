@@ -61,7 +61,7 @@ const ContactPage = () => {
         </section>
 
         {/* Footer Info */}
-        <section className="max-w-4xl text-center delius-regular text-[#f5f4f0]/70 space-y-2 text-sm flex flex-col items-center justify-center">
+        <section className="max-w-4xl text-center delius-regular text-[#f5f4f0]/70 space-y-2 text-sm flex flex-row gap-4 items-center justify-center">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#a8e3ff]" />
             <span>Based in: New Delhi, India</span>

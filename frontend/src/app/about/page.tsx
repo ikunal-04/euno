@@ -24,7 +24,7 @@ const AboutPage = () => {
           className="text-center max-w-3xl"
         >
           <h1 className="text-4xl md:text-5xl font-delius text-[#faf9f5] tracking-tight mb-4">
-            About <span className="text-[#a7a6a4]">Euno</span>
+            About Euno
           </h1>
           <p className="text-lg text-[#f5f4f0]/70 delius-regular">
             Your AI Companion for Life’s Moments
@@ -145,10 +145,6 @@ const AboutPage = () => {
             <div>
               <p className=" font-semibold text-white">Kunal Garg & Tanish Singla</p>
               <p className="text-[#f5f4f0]/70">Founder & Builder</p>
-            </div>
-            <div className="text-[#f5f4f0]/70 text-center sm:text-right mt-4 sm:mt-0">
-              <p>[Name of Other Member, if any]</p>
-              <p>[Role — e.g., Co-founder, AI Engineer, Designer]</p>
             </div>
           </div>
         </section>
