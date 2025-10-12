@@ -1,11 +1,18 @@
-import React from "react";
+"use client"
+
+import React, { useState } from "react";
 import NavLanding from "@/components/nav-landing";
 import { signIn } from "next-auth/react";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond } from "next/font/google";
+import { DM_Sans } from "next/font/google";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { Separator } from "./ui/separator";
 
-const playfair = Playfair_Display({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["600", "700"],
 });
 
 const dmSans = DM_Sans({
@@ -13,34 +20,58 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "600"],
 });
 
-export default function MindSpaceLanding() {
+export default function EunoLandingPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleTestLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Test credentials
+    const testEmail = "test@example.com";
+    const testPassword = "test123";
+    
+    if (email === testEmail && password === testPassword) {
+      // Simulate successful login
+      await signIn("credentials", {
+        email: testEmail,
+        password: testPassword,
+        redirect: true,
+        callbackUrl: "/"
+      });
+    } else {
+      alert("Invalid credentials. Use: test@example.com / test123");
+    }
+    
+    setIsLoading(false);
+  };
+
   return (
-    <div className="min-h-screen bg-[#121211] text-[#f8f8f6] flex flex-col">
+    <div className="min-h-screen bg-[#121211] text-[#f8f8f6] flex flex-col overflow-hidden">
       <NavLanding />
 
-      <div className="flex flex-1 flex-col lg:flex-row items-center justify-between max-w-7xl mx-auto w-full px-6 lg:px-16 py-20 gap-14">
+      <div className="flex flex-1 flex-col lg:flex-row items-center justify-between max-w-[1300px] mx-auto w-full px-6 lg:px-16 py-20 gap-12">
         {/* ===== Left Section ===== */}
-        <div className="flex-1 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-10">
+        <div className="flex-1 flex flex-col justify-center items-center lg:items-start text-center lg:text-left space-y-8 z-10">
           {/* Heading */}
           <h1
-            className={`${playfair.className} text-[3.5rem] md:text-[4.5rem] leading-[1.15] font-medium tracking-tight`}
+            className={`${cormorant.className} text-[3rem] md:text-[4rem] leading-[1.1] font-semibold tracking-tight`}
           >
-            <span className="block text-[#f5f4f0]/90">Calmness</span>
+            <span className="block text-[#f5f4f0]/90">Where thoughts</span>
             <span className="block text-[#f5f4f0] font-semibold">
-              Peace
+            find their voice.
             </span>
           </h1>
 
           {/* Subtitle */}
           <p
-            className={`${dmSans.className} text-lg md:text-xl text-[#f5f4f0]/75 max-w-md`}
+            className={`${dmSans.className} text-base md:text-lg text-[#f5f4f0]/70 max-w-sm leading-relaxed`}
           >
-           Your calm in the chaos, always there to listen. 
-            
+           Euno is your private companion for reflection, conversation, and gentle guidance.
           </p>
 
-          {/* Sign In Card */}
-          {/* <div className="bg-[#1a1a19] border border-[#2a2928] rounded-2xl p-8 shadow-xl w-[340px] backdrop-blur-sm"> */}
             <button
               onClick={() => signIn("google")}
               className={`${dmSans.className} flex items-center justify-center gap-3 px-6 py-3  p-8 shadow-xl w-[340px] bg-[#121211] border border-[#2a2928] rounded-xl text-lg font-medium text-[#f5f4f0] 
@@ -66,19 +97,48 @@ export default function MindSpaceLanding() {
               </svg>
               <span>Continue with Google</span>
             </button>
+
+            <Separator className="bg-white/30"/>
+
+            <form onSubmit={handleTestLogin} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 w-full">
+                <Label>Email</Label>
+                <Input 
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="test@example.com"
+                />
+              </div>
+              <div className="flex flex-col gap-2 w-full">
+                <Label>Password</Label>
+                <Input 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="test123"
+                />
+              </div>
+
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Login"}
+              </Button>
+            </form>
           </div>
-        {/* </div> */}
 
         {/* ===== Right Section - Video ===== */}
-        <div className="flex-1 flex justify-center lg:justify-end w-full">
-          <video
-            className="rounded-3xl shadow-2xl w-full max-w-[600px] h-auto object-cover"
-            src="/video.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
+        <div className="flex-1 flex justify-center lg:justify-end w-full relative">
+          <div className="relative w-full h-[65vh] lg:h-[80vh] max-w-none lg:max-w-[720px] overflow-hidden rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.5)]">
+            <video
+              className="absolute inset-0 w-full h-full object-cover object-center rounded-3xl"
+              src="/video.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+            <div className="absolute inset-0 bg-gradient-to-l from-[#121211]/40 to-transparent rounded-3xl pointer-events-none" />
+          </div>
         </div>
       </div>
     </div>

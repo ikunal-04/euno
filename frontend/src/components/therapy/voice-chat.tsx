@@ -1,10 +1,19 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useRef, useEffect } from "react";
+import { Mic, X } from "lucide-react";
+import MetaBalls from "../MetaBalls";
+import { 
+  Smile, 
+  Frown, 
+  HeartPulse, 
+  Angry as AngryIcon,
+  Feather, 
+  Sparkles 
+} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useVoiceChatStore } from "@/store/voice-chat";
-import { useUserStore } from "@/store/user";
+import { useUserStore } from "@/store/useUser";
 
 export const VoiceChat = () => {
   const isCallActive = useVoiceChatStore((s) => s.isCallActive);
@@ -69,9 +78,42 @@ export const VoiceChat = () => {
       }
     }, 1500);
   };
+  // Get responsive MetaBalls config based on screen size
+  const [metaBallConfig, setMetaBallConfig] = useState({
+    ballCount: 20,
+    animationSize: 70,
+    cursorBallSize: 2
+  });
+
+  useEffect(() => {
+    const updateMetaBallConfig = () => {
+      const width = window.innerWidth;
+      
+      if (width < 640) {
+        // Mobile: fewer balls, smaller animation
+        setMetaBallConfig({ ballCount: 12, animationSize: 40, cursorBallSize: 1.5 });
+      } else if (width < 1024) {
+        // Tablet: medium configuration
+        setMetaBallConfig({ ballCount: 16, animationSize: 55, cursorBallSize: 2 });
+      } else if (width < 1440) {
+        // Desktop: default configuration
+        setMetaBallConfig({ ballCount: 20, animationSize: 70, cursorBallSize: 2 });
+      } else {
+        // Large screens: more balls, larger animation
+        setMetaBallConfig({ ballCount: 25, animationSize: 85, cursorBallSize: 2.5 });
+      }
+    };
+
+    // Initial setup
+    updateMetaBallConfig();
+
+    // Update on resize
+    window.addEventListener('resize', updateMetaBallConfig);
+    return () => window.removeEventListener('resize', updateMetaBallConfig);
+  }, []);
 
   const connectWebSocket = () => {
-    const ws = new WebSocket('ws://localhost:8000/ws/audio');
+    const ws = new WebSocket('wss://api.euno.live/ws/audio');
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -328,135 +370,122 @@ export const VoiceChat = () => {
     return bytes;
   }
 
+  const moods = [
+    { icon: Smile,      label: "Happy",   color: "yellow" },
+    { icon: Frown,      label: "Sad",     color: "blue" },
+    { icon: HeartPulse, label: "Anxious", color: "purple" },
+    { icon: AngryIcon,  label: "Angry",   color: "red" },
+    { icon: Feather,    label: "Calm",    color: "green" },
+    { icon: Sparkles,   label: "Excited", color: "orange" }
+  ];
 
   return (
     <div className="flex flex-col h-screen w-full items-center justify-center relative overflow-hidden bg-[#141413] transition-all">
-      {/* Gradient pulse background */}
-      <div
-        className={`absolute inset-0 transition-all duration-1000 ${
-          isRecording ? "opacity-100 animate-pulse-glow" : "opacity-0"
-        }`}
-        style={{
-          background:
-            "radial-gradient(circle at center, rgba(76,154,255,0.25), rgba(20,20,19,0.9))",
-        }}
-      />
-
-      {/* Streamed transcript previews */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Current partial messages */}
-        {currentUserText && (
-          <div className="flex justify-end">
-            <div className="max-w-[80%] p-3 rounded-lg bg-blue-400 text-white opacity-70">
-              <p className="text-sm">{currentUserText}</p>
-              <span className="text-xs opacity-70">Speaking...</span>
-            </div>
-          </div>
-        )}
-
-        {currentAgentText && (
-          <div className="flex justify-start">
-            <div className="max-w-[80%] p-3 rounded-lg bg-muted/70 text-foreground">
-              <p className="text-sm">{currentAgentText}</p>
-              <span className="text-xs opacity-70">Thinking...</span>
-            </div>
-          </div>
-        )}
+      <div className="absolute inset-0 w-full h-full">
+        <MetaBalls
+        color="#a8e3ff"
+        cursorBallColor="#ffffff"
+        cursorBallSize={2}
+        ballCount={20}
+        animationSize={60}
+        enableMouseInteraction={false}
+        enableTransparency={true}
+        clumpFactor={1}
+        speed={isPlaying ? 1.0 : 0.4}
+        />
       </div>
 
-      {/* Controls */}
-      <div className="p-4 border-t bg-background/50 backdrop-blur">
-        <div className="flex items-center justify-center space-x-4">
-          {/* Volume Control */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleToggleMute}
-              disabled={!isCallActive}
-            >
-              {isMuted ? (
-                <VolumeX className="h-4 w-4" />
-              ) : (
-                <Volume2 className="h-4 w-4" />
-              )}
-            </Button>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-20"
-              disabled={!isCallActive}
-            />
+      <div className="absolute bottom-8 sm:bottom-12 md:bottom-16 lg:bottom-14 left-1/2 -translate-x-1/2 flex items-center justify-center gap-4 sm:gap-6 md:gap-8 px-4">
+        <button
+          onClick={isCallActive ? handleEndCall : handleStartCall}
+          className="relative group"
+          aria-label={isRecording ? 'Stop Recording' : 'Start Recording'}
+        >
+          {isRecording && (
+            <>
+              <div className="absolute inset-0 rounded-full bg-emerald-500/30 animate-ripple" />
+              <div className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ripple" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ripple" style={{ animationDelay: '1s' }} />
+            </>
+          )}
+          
+          <div className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+            isRecording
+              ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/50 scale-110"
+              : "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 shadow-slate-900/50 hover:scale-105"
+          }`}>
+            {isRecording ? (
+              <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-white" strokeWidth={2.5} />
+            ) : (
+              <Mic className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
+            )}
           </div>
 
-          {/* Main Call Button */}
-          <Button
-            onClick={isCallActive ? handleEndCall : handleStartCall}
-            size="lg"
-            variant={isCallActive ? "destructive" : "default"}
-            className={`rounded-full w-16 h-16 ${isCallActive
-                ? "bg-red-500 hover:bg-red-600"
-                : "bg-green-500 hover:bg-green-600"
-              }`}
-          >
-            {isCallActive ? (
-              <PhoneOff className="h-6 w-6" />
-            ) : (
-              <Phone className="h-6 w-6" />
-            )}
-          </Button>
-
-          {/* Mic Indicator */}
-          <div className="flex items-center space-x-2">
-            <div
-              className={`p-2 rounded-full ${isRecording ? "bg-red-100" : "bg-muted"}`}
-            >
-              {isRecording ? (
-                <Mic className="h-4 w-4 text-red-500" />
-              ) : (
-                <MicOff className="h-4 w-4 text-muted-foreground" />
-              )}
-            </div>
-            <span className="text-sm text-muted-foreground">
-              {isRecording ? "Listening..." : "Not recording"}
+          <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs sm:text-sm text-slate-400 font-light">
+              {isRecording ? 'Recording' : 'Start'}
             </span>
           </div>
-        </div>
+        </button>
 
-        {/* Status */}
-        <div className="text-center mt-3">
-          <span className="text-xs text-muted-foreground">
-            {!isCallActive && "Ready to start"}
-            {isCallActive && "Session active"}
-            {isPlaying && " - Agent speaking"}
-          </span>
-        </div>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="relative group"
+              aria-label="Select Mood"
+            >
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-blue-500 to-indigo-600 hover:from-indigo-500 hover:to-purple-600 shadow-2xl shadow-blue-800/50 hover:shadow-indigo-500/50 hover:scale-105">
+                <Smile className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white transition-colors" strokeWidth={2.5} />
+              </div>
+              <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                <span className="text-xs sm:text-sm text-slate-400 font-light">Mood</span>
+              </div>
+            </button>
+          </PopoverTrigger>
+          
+          <PopoverContent 
+            side="top" 
+            align="center"
+            className="w-auto p-4 bg-gradient-to-b from-[#1a1a1a]/95 to-[#0f0f0f]/95 backdrop-blur-xl border border-white/10 shadow-2xl rounded-4xl"
+          >
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              {moods.map((mood) => {
+                const Icon = mood.icon;
+                return (
+                  <button
+                    key={mood.label}
+                    onClick={() => {
+                      console.log(`${mood.label} mood selected`);
+                    }}
+                    className="flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-200 hover:scale-110 hover:bg-white/10 group"
+                  >
+                    <Icon 
+                      className="h-6 w-6 mb-2 text-slate-300 group-hover:text-white transition-colors" 
+                      strokeWidth={1.5}
+                    />
+                    <span className="text-xs text-slate-400 group-hover:text-white transition-colors whitespace-nowrap">
+                      {mood.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <button
+          onClick={handleEndCall}
+          className="relative group"
+          aria-label="End Call"
+        >
+          <div className="relative w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-full flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-red-500 hover:to-red-600 shadow-2xl shadow-slate-900/50 hover:shadow-red-500/50 hover:scale-105">
+            <X className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-slate-300 group-hover:text-white transition-colors" strokeWidth={2.5} />
+          </div>
+          <div className="absolute -bottom-6 sm:-bottom-7 md:-bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
+            <span className="text-xs sm:text-sm text-slate-400 font-light">End Call</span>
+          </div>
+        </button>
       </div>
-
-      {/* Pulse animation */}
-      <style jsx global>{`
-        @keyframes pulse-glow {
-          0% {
-            opacity: 0.5;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.05);
-          }
-          100% {
-            opacity: 0.5;
-            transform: scale(1);
-          }
-        }
-        .animate-pulse-glow {
-          animation: pulse-glow 3s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };
