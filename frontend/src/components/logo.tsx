@@ -1,8 +1,10 @@
 import React, { useRef } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { useRouter } from 'next/navigation'
 
 const Logo = () => {
   const logoRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
 
   // Magnet effect
   const x = useMotionValue(0)
@@ -29,7 +31,7 @@ const Logo = () => {
   }
 
   return (
-    <div className="flex items-center gap-3 pl-16">
+    <div onClick={() => router.push('/')} className="flex items-center gap-3 pl-10">
       <motion.div
         ref={logoRef}
         className="relative w-9 h-9 cursor-pointer"
