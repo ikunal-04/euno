@@ -4,8 +4,9 @@ const TITLE = "Euno - Your AI Companion for Life's Moments";
 const DESCRIPTION =
   "Euno is your always-available AI companion who listens, understands, and supports you through every emotion. Whether you're seeking comfort, motivation, or just someone to talk to, Euno adapts to be your perfect friend, mentor, or confidant.";
 
-const BASE_URL = "https://euno.live/";
-const PREVIEW_IMAGE = "/og-image.jpg";
+const BASE_URL = "https://www.euno.live";
+const PREVIEW_IMAGE = `${BASE_URL}/og-image.jpg`; // Absolute URL
+const FAVICON = `${BASE_URL}/favicon.ico`; // Absolute URL
 const ALT_TITLE = "Euno - Your Personal AI Friend & Emotional Support";
 
 export const siteConfig: Metadata = {
@@ -15,7 +16,9 @@ export const siteConfig: Metadata = {
   },
   description: DESCRIPTION,
   icons: {
-    icon: "/favicon.ico",
+    icon: FAVICON,
+    shortcut: FAVICON,
+    apple: FAVICON,
   },
   applicationName: "Euno",
   authors: [{ name: "Euno Team" }],
@@ -34,18 +37,18 @@ export const siteConfig: Metadata = {
     description: DESCRIPTION,
     images: [
       {
-        url: PREVIEW_IMAGE,
+        url: PREVIEW_IMAGE, // Now absolute URL
         width: 1200,
         height: 630,
         alt: ALT_TITLE,
-        type: "image/png",
+        type: "image/jpg", // Changed from png to jpeg
       },
       {
         url: PREVIEW_IMAGE,
         width: 1200,
         height: 1200,
         alt: ALT_TITLE,
-        type: "image/png",
+        type: "image/jpg",
       },
     ],
   },
@@ -56,7 +59,7 @@ export const siteConfig: Metadata = {
     creator: "@euno_ai",
     title: TITLE,
     description: DESCRIPTION,
-    images: [PREVIEW_IMAGE],
+    images: [PREVIEW_IMAGE], // Now absolute URL
   },
 
   keywords: [
