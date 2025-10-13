@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
       case "subscription.created": {
         const subscription = payload.subscription?.entity;
 
+        console.log("calll cammeeeee")
+
         if (subscription?.notes?.userId) {
           const userId = subscription.notes.userId;
           const customerId = subscription.customer_id || subscription.customer;
@@ -81,9 +83,13 @@ export async function POST(req: NextRequest) {
       case "subscription.charged.success": {
         const payment = payload.payment?.entity;
 
+        console.log("calll cammeeeee 2")
+
         if (!payment?.subscription_id) {
           break;
         }
+
+        console.log("calll cammeeeee 3")
 
         try {
           const subscription = await razorpay.subscriptions.fetch(payment.subscription_id);
@@ -111,6 +117,8 @@ export async function POST(req: NextRequest) {
 
       case "subscription.updated": {
         const subscription = payload.subscription?.entity;
+
+        console.log("calll cammeeeee 3")
 
         if (subscription?.notes?.userId) {
           const userId = subscription.notes.userId;
