@@ -1,17 +1,23 @@
 "use server";
 
-import { createClient } from "@/lib/db/server";
-import { Messages } from "@/types/messages";
+import { db } from "@/lib/db/server";
+import type { Messages } from "@/types/messages";
 
-export async function createMessage({userId, message, role}: {userId: string, message: string, role: "user" | "assistant"}) {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-    .from("messages")
-    .insert({userId, message, role})
-    .select()
-    .single();
+export async function createMessage({
+  userId,
+  message,
+  role,
+}: {
+  userId: string;
+  message: string;
+  role: "user" | "assistant";
+}) {
+  const sql = db();
+  const [data] = await sql<Messages[]>`
+        INSERT INTO messages ("userId", message, role)
+        VALUES (${userId}, ${message}, ${role}::message_role)
+        RETURNING id, "userId", role, message, "createdAt"
+    `;
 
-    if (error) throw error;
-    return data as Messages;
+  return data as Messages;
 }
-

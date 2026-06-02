@@ -1,27 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/config/auth";
-import { createClient } from "@/lib/db/server";
+import { db } from "@/lib/db/server";
 
-export async function GET(req: NextRequest) {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    const supabase = await createClient();
+  const sql = db();
 
-    // Fetch user details from Supabase
-    const { data, error } = await supabase
-        .from("users")
-        .select("id, userId, name, email, imageUrl, plans")
-        .eq("email", session.user.email)
-        .single();
+  const [data] = await sql`
+        SELECT id, "userId", name, email, "imageUrl", plans
+        FROM users
+        WHERE email = ${session.user.email}
+        LIMIT 1
+    `;
 
-    if (error) {
-        console.error("Error fetching user from Supabase:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  if (!data) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
 
-    return NextResponse.json({ user: data });
+  return NextResponse.json({ user: data });
 }

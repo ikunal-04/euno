@@ -3,8 +3,8 @@ from google import genai
 from google.genai import types
 from app.agent.prompt import THINKING_AGENT
 from dotenv import load_dotenv
-import requests
-import json
+import psycopg
+from psycopg.rows import dict_row
 
 load_dotenv()
 
@@ -32,45 +32,32 @@ class AgentService:
         Returns: (user_name, chat_summary)
         """
         try:
-            # Get user info and summary from frontend API
-            supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-            supabase_key = os.getenv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+            database_url = os.getenv('DATABASE_URL')
             
-            if not supabase_url or not supabase_key:
-                print("⚠️ Supabase credentials not found")
+            if not database_url:
+                print("⚠️ DATABASE_URL not found")
                 return "Friend", "No previous conversation context available."
             
-            # Get user info
-            user_response = requests.get(
-                f"{supabase_url}/rest/v1/users?userId=eq.{user_id}&select=name",
-                headers={
-                    "apikey": supabase_key,
-                    "Authorization": f"Bearer {supabase_key}",
-                    "Content-Type": "application/json"
-                }
-            )
-            
             user_name = "Friend"
-            if user_response.status_code == 200:
-                user_data = user_response.json()
-                if user_data and len(user_data) > 0:
-                    user_name = user_data[0].get('name', 'Friend')
-            
-            # Get chat summary
-            summary_response = requests.get(
-                f"{supabase_url}/rest/v1/summary?userId=eq.{user_id}&select=summary&order=createdAt.desc&limit=1",
-                headers={
-                    "apikey": supabase_key,
-                    "Authorization": f"Bearer {supabase_key}",
-                    "Content-Type": "application/json"
-                }
-            )
-            
             chat_summary = "No previous conversation context available."
-            if summary_response.status_code == 200:
-                summary_data = summary_response.json()
-                if summary_data and len(summary_data) > 0:
-                    chat_summary = summary_data[0].get('summary', 'No previous conversation context available.')
+
+            with psycopg.connect(database_url, row_factory=dict_row) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        'SELECT name FROM users WHERE "userId" = %s LIMIT 1',
+                        (user_id,),
+                    )
+                    user_data = cur.fetchone()
+                    if user_data:
+                        user_name = user_data.get('name') or "Friend"
+
+                    cur.execute(
+                        'SELECT summary FROM summary WHERE "userId" = %s ORDER BY "createdAt" DESC LIMIT 1',
+                        (user_id,),
+                    )
+                    summary_data = cur.fetchone()
+                    if summary_data:
+                        chat_summary = summary_data.get('summary') or chat_summary
             
             return user_name, chat_summary
             
