@@ -18,7 +18,7 @@ export const createSubscription = async (planId: string, name?: string, email?: 
         const { id } = await response.json();
 
         const options = {
-            key: process.env.RAZORPAY_LIVE_KEY,
+            key: process.env.NEXT_PUBLIC_RAZORPAY_TEST_KEY,
             subscription_id: id,
             name: "Euno",
             description: "Your AI Companion for Life's Moments",
