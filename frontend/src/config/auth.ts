@@ -17,6 +17,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }: { user: any; account: any }) {
+      console.log("🔍 signIn callback:", { email: user?.email, accountType: account?.type, userId: user?.id });
       if (!user.email) return false;
 
       try {
@@ -27,34 +28,42 @@ export const authOptions: NextAuthOptions = {
                     WHERE email = ${user.email}
                     LIMIT 1
                 `;
+        console.log("🔍 existing user check:", existingUser);
 
         if (!existingUser) {
-          await sql`
+          const insertResult = await sql`
                         INSERT INTO users ("userId", email, name, "imageUrl", plans)
                         VALUES (${user.id}, ${user.email}, ${user.name ?? null}, ${user.image ?? null}, ${"FREE"}::user_plan)
                     `;
+          console.log("🔍 user inserted:", insertResult);
         }
 
         return true;
       } catch (error) {
-        console.error("SignIn callback error:", error);
+        console.error("❌ SignIn callback error:", error);
         return false;
       }
     },
-    async jwt({ token, account }: { token: any; account: any }) {
+    async jwt({ token, account, user }: { token: any; account: any; user: any }) {
       if (account) {
         token.accessToken = account.access_token;
+      }
+      if (user) {
+        token.user_id = user.id;
       }
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
+        session.user.userId = token.user_id;
         session.accessToken = token.accessToken;
       }
       return session;
     },
-    async redirect() {
-      return "/";
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
 } satisfies NextAuthOptions;

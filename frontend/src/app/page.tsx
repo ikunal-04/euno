@@ -20,11 +20,9 @@ export default function Page() {
 
   if (user) {
     return (
-      <div className="h-[90vh] flex flex-col">
+      <div className="relative h-[100dvh] overflow-hidden">
         <NavBarMain />
-        <div className="flex flex-1 flex-col gap-4">
-          <VoiceChat />
-        </div>
+        <VoiceChat />
       </div>
     );
   }
