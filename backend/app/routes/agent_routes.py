@@ -8,7 +8,6 @@ import asyncio
 import base64
 import json
 import logging
-from datetime import date
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from deepgram import (
@@ -277,7 +276,7 @@ async def websocket_audio_endpoint(websocket: WebSocket):
         if user and user.get("plans") != "PRO":
             count = user.get("messageCount") or 0
             last = user.get("lastMessageDate")
-            if last is None or last < date.today():
+            if last is None or last < db.today():
                 count = 0
             remaining = max(0, settings.FREE_DAILY_LIMIT - count)
         await session.send(

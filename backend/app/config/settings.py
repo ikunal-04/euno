@@ -34,6 +34,9 @@ class Settings:
     HISTORY_MESSAGES = 20          # past messages seeded into a new chat session
     MAX_OUTPUT_TOKENS = 300        # keep replies short — it's a voice conversation
     FREE_DAILY_LIMIT = 5
+    # The free quota resets at midnight in this timezone, regardless of where
+    # the server runs. Pinned so local dev (IST) and prod (UTC) agree.
+    LIMIT_RESET_TIMEZONE = os.getenv("LIMIT_RESET_TIMEZONE", "Asia/Kolkata")
     MEMORY_SEARCH_TIMEOUT = 2.5    # seconds — never let memory lookups stall a reply
 
     @classmethod

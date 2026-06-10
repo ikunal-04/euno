@@ -114,6 +114,10 @@ class AgentService:
             text = ""
 
         if not text:
+            # Don't charge the user for a turn we failed to answer.
+            await db.refund_message(session.user_id)
+            if remaining is not None:
+                remaining = min(settings.FREE_DAILY_LIMIT, remaining + 1)
             return TurnResult(text=FALLBACK_REPLY, remaining=remaining)
 
         session.spawn(db.save_message(session.user_id, "user", user_text))

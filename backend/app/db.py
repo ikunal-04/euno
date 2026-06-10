@@ -1,12 +1,18 @@
 """Async Postgres access via a shared connection pool."""
 
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 
 from app.config.settings import settings
+
+
+def today() -> date:
+    """Current date in the configured quota-reset timezone."""
+    return datetime.now(ZoneInfo(settings.LIMIT_RESET_TIMEZONE)).date()
 
 _pool: Optional[AsyncConnectionPool] = None
 
@@ -54,7 +60,7 @@ async def reserve_message(user_id: str) -> Optional[dict]:
     free daily limit is already used up. A single UPDATE avoids the
     check-then-increment race the old code had.
     """
-    today = date.today()
+    day = today()
     async with pool().connection() as conn:
         cur = await conn.execute(
             '''
@@ -73,9 +79,22 @@ async def reserve_message(user_id: str) -> Optional[dict]:
               )
             RETURNING plans, "messageCount"
             ''',
-            (today, today, user_id, today, settings.FREE_DAILY_LIMIT),
+            (day, day, user_id, day, settings.FREE_DAILY_LIMIT),
         )
         return await cur.fetchone()
+
+
+async def refund_message(user_id: str) -> None:
+    """Give back a reserved message when generating the reply failed."""
+    async with pool().connection() as conn:
+        await conn.execute(
+            '''
+            UPDATE users
+            SET "messageCount" = GREATEST("messageCount" - 1, 0)
+            WHERE "userId" = %s AND "lastMessageDate" = %s
+            ''',
+            (user_id, today()),
+        )
 
 
 async def get_recent_messages(user_id: str, limit: int) -> list[dict]:
