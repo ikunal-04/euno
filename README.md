@@ -164,4 +164,4 @@ If you’d like to collaborate, contribute, or give feedback, feel free to open 
 📬 Contact
 
 Website: https://euno.live
-Email: kunalgarg054@gmail.com, tanishsingla51@gmail.com
+Email: kunalgarg054@gmail.com

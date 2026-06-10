@@ -138,12 +138,12 @@ const AboutPage = () => {
             <Users className="w-6 h-6 text-[#faf9f5]/80" /> The Team Behind Euno
           </h2>
           <p>
-            Euno is built by a small, passionate team who believe empathy and
-            technology can coexist beautifully.
+            Euno is built by a founder who believes empathy and technology can
+            coexist beautifully.
           </p>
           <div className="border border-[#2a2928] rounded-xl p-6 bg-[#1a1a19] flex flex-col sm:flex-row items-center justify-between">
             <div>
-              <p className=" font-semibold text-white">Kunal Garg & Tanish Singla</p>
+              <p className=" font-semibold text-white">Kunal Garg</p>
               <p className="text-[#f5f4f0]/70">Founder & Builder</p>
             </div>
           </div>
