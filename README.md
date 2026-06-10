@@ -46,9 +46,9 @@ Euno bridges this gap by focusing on **emotional continuity and human-like inter
 - Designed to sound natural and human
 
 ### Memory & Context Awareness
-- Summarization layer tracks recent conversations
-- Allows Euno to remember emotional context and conversation flow
-- Creates continuity across sessions
+- Long-term memory powered by [mem0](https://mem0.ai) (free tier) — Euno remembers your life across sessions
+- Falls back to stored conversation summaries when mem0 is not configured
+- Recent chat history is seeded into every session for continuity
 
 ---
 
@@ -106,8 +106,31 @@ Backend
 ```bash
 cd backend
 uv sync
-uvicorn main:app --reload
+uv run uvicorn app.main:app --reload
 ```
+
+### Environment variables
+
+Backend (`backend/.env`):
+
+| Variable | Purpose |
+|---|---|
+| `DEEPGRAM_API_KEY` | Speech-to-text and text-to-speech |
+| `GEMINI_API_KEY` | Conversation model |
+| `DATABASE_URL` | Postgres (users, messages) |
+| `VOICE_JWT_SECRET` | Must equal the frontend `NEXTAUTH_SECRET` (or `VOICE_JWT_SECRET`) — used to verify voice WebSocket tokens |
+| `MEM0_API_KEY` | Optional — free key from https://app.mem0.ai enables long-term memory |
+| `ALLOWED_ORIGINS` | Optional — comma-separated CORS origins |
+
+Frontend (`frontend/.env.local`): `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_RAZORPAY_KEY`, `RAZORPAY_LIVE_KEY`, `RAZORPAY_LIVE_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, optional `NEXT_PUBLIC_VOICE_WS_URL`.
+
+### How a conversation works
+
+1. Browser streams 16 kHz PCM over an authenticated WebSocket (short-lived JWT from `/api/voice-token`).
+2. Deepgram Nova-3 transcribes with `speech_final` endpointing — Euno replies to complete thoughts, not fragments.
+3. Gemini 2.5 Flash (thinking disabled for latency) generates a short, friend-like reply using the user's memories and recent history.
+4. Deepgram Aura-2 streams TTS audio back; speaking over Euno interrupts it (barge-in), just like a real call.
+5. Messages, daily limits, and memories are written server-side — the client is display-only.
 
 ---
 

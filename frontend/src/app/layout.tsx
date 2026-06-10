@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { siteConfig } from "@/config/site-config";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
+  variable: "--font-display",
   subsets: ["latin"],
+  axes: ["SOFT", "opsz"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const dmSans = DM_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${fraunces.variable} ${dmSans.variable} antialiased`}
       >
         <Providers>
           {children}

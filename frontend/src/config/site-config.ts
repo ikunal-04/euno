@@ -106,5 +106,4 @@ export const siteConfig: Metadata = {
   },
 
   referrer: "origin-when-cross-origin",
-  colorScheme: "light dark",
 };

@@ -49,7 +49,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#141413] text-white flex flex-col items-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 font-delius relative">
+    <div className="min-h-screen bg-[#141413] text-white flex flex-col items-center px-4 sm:px-6 lg:px-12 py-8 sm:py-12 relative">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
 
       {!user && <NavLanding />}
@@ -81,8 +81,8 @@ export default function PricingPage() {
           transition={{ duration: 0.8 }}
           className="text-center  mb-8 sm:mb-12 md:mb-16 lg:mb-20 px-2 sm:px-0"
         >
-          <h1 className="font-light text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-[#faf9f5] pb-2">
-            Upgrade Your Plan
+          <h1 className="font-display tracking-tight text-2xl sm:text-4xl md:text-5xl lg:text-6xl text-[#faf9f5] pb-2">
+            Upgrade your plan
           </h1>
           <p className="text-gray-400 mt-2 sm:mt-3 md:mt-4 text-sm sm:text-base md:text-lg lg:text-xl max-w-2xl mx-auto">
             Whether you just want to talk or need a true companion, we've got you covered.
