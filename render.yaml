@@ -1,0 +1,23 @@
+# Render Blueprint — deploy the voice backend on the free tier.
+# In the Render dashboard: New + > Blueprint > select this repo.
+services:
+  - type: web
+    name: euno-voice
+    runtime: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: VOICE_JWT_SECRET
+        sync: false
+      - key: MEM0_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://www.euno.live,https://euno.live

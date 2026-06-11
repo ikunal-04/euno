@@ -1,25 +1,16 @@
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-# Install system dependencies including audio libraries for PyAudio
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    portaudio19-dev \
-    python3-pyaudio \
-    libasound2-dev \
-    libportaudio2 \
-    libportaudiocpp0 \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install uv.
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-
-# Copy application code
-COPY . /app
-
-# Install the application dependencies.
 WORKDIR /app
-RUN uv sync --frozen --no-cache
+ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
-# Run the application
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Install dependencies first so they cache independently of source changes
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
+
+COPY . .
+RUN uv sync --frozen --no-dev
+
+EXPOSE 8000
+
+# $PORT is injected by the host (Render uses 10000); default to 8000 locally
+CMD uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
