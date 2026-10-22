@@ -1,6 +1,6 @@
 ## Euno
 
-This is a [Euno](https://www.euno.live/).
+This is a [Euno](https://euno-ai.vercel.app/).
 
 ## Getting Started
 

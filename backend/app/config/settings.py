@@ -19,7 +19,7 @@ class Settings:
     ALLOWED_ORIGINS = [
         o.strip()
         for o in os.getenv(
-            "ALLOWED_ORIGINS", "http://localhost:3000,https://www.euno.live,https://euno.live"
+            "ALLOWED_ORIGINS", "http://localhost:3000,https://euno-ai.vercel.app,https://talking-ten.vercel.app"
         ).split(",")
         if o.strip()
     ]

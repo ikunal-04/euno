@@ -20,4 +20,4 @@ services:
       - key: MEM0_API_KEY
         sync: false
       - key: ALLOWED_ORIGINS
-        value: https://www.euno.live,https://euno.live
+        value: https://euno-ai.vercel.app,https://talking-ten.vercel.app

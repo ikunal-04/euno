@@ -12,7 +12,7 @@ type WSConnectionState = "disconnected" | "connecting" | "connected" | "failed";
 const DEFAULT_VOICE_WS_URL =
   process.env.NODE_ENV === "development"
     ? "ws://localhost:8000/ws/audio"
-    : "wss://api.euno.live/ws/audio";
+    : "wss://euno-voice.onrender.com/ws/audio";
 
 const VOICE_WS_URL = process.env.NEXT_PUBLIC_VOICE_WS_URL || DEFAULT_VOICE_WS_URL;
 const PLAYBACK_SAMPLE_RATE = 48000;

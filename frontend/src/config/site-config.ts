@@ -4,7 +4,7 @@ const TITLE = "Euno - Your AI Companion for Life's Moments";
 const DESCRIPTION =
   "Euno is your always-available AI companion who listens, understands, and supports you through every emotion. Whether you're seeking comfort, motivation, or just someone to talk to, Euno adapts to be your perfect friend, mentor, or confidant.";
 
-const BASE_URL = "https://www.euno.live";
+const BASE_URL = "https://euno-ai.vercel.app";
 const PREVIEW_IMAGE = `${BASE_URL}/og-image.jpg`; // Absolute URL
 const FAVICON = `${BASE_URL}/favicon.ico`; // Absolute URL
 const ALT_TITLE = "Euno - Your Personal AI Friend & Emotional Support";

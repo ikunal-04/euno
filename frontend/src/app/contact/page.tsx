@@ -68,7 +68,7 @@ const ContactPage = () => {
           </div>
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-[#a8e3ff]" />
-            <a href="https://euno.live" className="underline">https://euno.live</a>
+            <a href="https://euno-ai.vercel.app" className="underline">https://euno-ai.vercel.app</a>
           </div>
           <div className="flex items-center gap-2">
             <Twitter className="w-4 h-4 text-[#a8e3ff]" />

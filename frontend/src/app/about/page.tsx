@@ -159,7 +159,7 @@ const AboutPage = () => {
             human-centered AI — one that listens, feels, and grows with you —
             we’d love you to be part of it.
           </p>
-          <p className="text-[#a7a6a4]">Stay connected at <span className="underline">euno.live</span></p>
+          <p className="text-[#a7a6a4]">Stay connected at <span className="underline">euno-ai.vercel.app</span></p>
         </section>
       </main>
     </div>

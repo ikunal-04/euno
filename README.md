@@ -163,5 +163,5 @@ If you’d like to collaborate, contribute, or give feedback, feel free to open 
 
 📬 Contact
 
-Website: https://euno.live
+Website: https://euno-ai.vercel.app
 Email: kunalgarg054@gmail.com
